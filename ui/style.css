@@ -1,0 +1,272 @@
+:root {
+  --bg: #f3efe6;
+  --panel: #fffdf8;
+  --fg: #22201c;
+  --muted: #6d685e;
+  --line: #ddd6c8;
+  --accent: #1d5b84;
+  --accent-fg: #ffffff;
+  --device: #2a2b30;
+  --device-edge: #17181b;
+  --key: #222327;
+  --key-fg: #ece9e1;
+  --led-off: #3a1810;
+  --led-on: #ff5a2a;
+  --bad: #a3322a;
+  --ok: #2d7a43;
+  --stage: #1b2a33;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141412;
+    --panel: #1d1c19;
+    --fg: #ece9e1;
+    --muted: #a19d93;
+    --line: #34322d;
+    --accent: #6eb2e4;
+    --accent-fg: #0d1b26;
+    --device: #26272b;
+    --device-edge: #0c0c0e;
+    --key: #1c1d21;
+    --bad: #ec7a70;
+    --ok: #76c58d;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141412; --panel: #1d1c19; --fg: #ece9e1; --muted: #a19d93; --line: #34322d;
+  --accent: #6eb2e4; --accent-fg: #0d1b26; --device: #26272b; --device-edge: #0c0c0e; --key: #1c1d21;
+  --bad: #ec7a70; --ok: #76c58d;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--stage);
+  color: var(--fg);
+  font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  overflow: hidden;
+}
+h1 { font-size: 1.1rem; margin: 0; }
+h1 span { color: var(--muted); font-weight: 400; font-size: .85rem; margin-left: .4em; }
+h3 { font-size: .9rem; margin: 16px 0 6px; color: var(--muted); }
+[hidden] { display: none !important; }
+
+/* the stage: settings, board and drawer */
+#stage {
+  display: flex; height: 100vh; height: 100dvh;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+#play { flex: 1 1 auto; min-width: 0; display: flex; }
+.side {
+  /* the scrollbar's space is always reserved, so opening sections doesn't change the width */
+  flex: 0 0 auto; overflow: auto; scrollbar-gutter: stable; padding: 8px;
+  background: var(--panel); color: var(--fg);
+}
+/* the panels open on the side of their buttons: settings left of the board, the drawer right of
+   it (both above/below it in portrait); only one of them is open at a time */
+#settings { order: 0; width: clamp(280px, 32vw, 420px); border-right: 1px solid var(--line); padding: 0 14px 12px; overscroll-behavior: contain; }
+#board-area { order: 1; }
+#tray { order: 2; width: clamp(112px, 22vw, 220px); border-left: 1px solid var(--line); }
+.side-head { display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: .9rem; margin-bottom: 4px; }
+#board-area { flex: 1 1 auto; min-width: 0; container-type: size; display: grid; place-items: center; }
+#board-box { position: relative; width: min(100cqw, 100cqh); aspect-ratio: 1; }
+#board, #board .board { width: 100%; height: 100%; }
+/* portrait: the board is limited by the width, so the drawer goes into the free space below it */
+@media (orientation: portrait) {
+  #play { flex-direction: column; }
+  #tray { flex: 1 1 0; min-height: 0; width: auto; border-left: 0; border-top: 1px solid var(--line); display: flex; flex-direction: column; }
+  #settings { flex: 1 1 0; min-height: 0; width: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  #tray-board { flex: 1 1 0; min-height: 0; }
+  /* fits both ways: the tray is short when the unused antennas are hidden */
+  #tray-board .board { height: 100%; width: 100%; max-width: 220px; }
+  #play:has(> .side:not([hidden])) #board-area { flex: 0 0 auto; height: min(100vw, 62dvh); }
+}
+
+/* the console stands on the whirlpool, at (512, 515) of the 1024 × 1024 board */
+#console-layer {
+  position: absolute; left: 50%; top: 50.3%; width: var(--console-size, 33%);
+  translate: -50% -50%; z-index: 1;
+}
+#console-layer .device { --size: 100%; }
+#console-layer.enlarged { position: fixed; left: 50%; top: 50%; width: min(94vw, 94dvh); z-index: 20; }
+#enlarge-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, .6); z-index: 19; }
+#leds { cursor: zoom-in; }
+#console-layer.enlarged #leds { cursor: zoom-out; }
+
+.corner-btn {
+  position: absolute; bottom: 1.2%; z-index: 2; width: 40px; height: 40px; padding: 0;
+  display: grid; place-items: center; cursor: pointer;
+  border-radius: 50%; border: 1px solid rgba(255, 255, 255, .35);
+  background: rgba(20, 20, 18, .55); color: #fff; opacity: .8;
+}
+.corner-btn:hover, .corner-btn:focus-visible { opacity: 1; }
+.corner-btn.left { left: 1.2%; }
+.corner-btn.right { right: 1.2%; }
+.corner-btn svg { width: 24px; height: 24px; }
+#open-settings svg { fill: currentColor; }
+#open-tray svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+#open-tray svg circle { fill: currentColor; stroke: none; }
+.icon-btn {
+  font: inherit; font-size: 1.4rem; line-height: 1; cursor: pointer; width: 34px; height: 34px;
+  border: 0; border-radius: 50%; background: transparent; color: var(--muted);
+}
+.icon-btn:hover { background: color-mix(in srgb, var(--fg) 8%, transparent); color: var(--fg); }
+
+/* settings panel */
+.settings-head h1 span { display: block; margin-left: 0; }
+.settings-head {
+  position: sticky; top: 0; z-index: 1; background: var(--panel);
+  display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 0 8px;
+}
+#settings > details { border-top: 1px solid var(--line); padding: 2px 0 6px; }
+#settings > details > summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
+#settings details details summary { cursor: pointer; color: var(--muted); }
+.sliders { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 10px; align-items: center; margin: 8px 0; }
+.sliders label { display: contents; }
+.check { display: flex; gap: 6px; align-items: center; }
+.views { display: grid; gap: 6px; margin: 8px 0; }
+select { font: inherit; color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; }
+/* no accidental text selection; the log and announcements can still be copied */
+body { user-select: none; -webkit-user-select: none; }
+.log, input, select { user-select: text; -webkit-user-select: text; }
+.muted { color: var(--muted); }
+.small { font-size: .85rem; }
+code { font-family: ui-monospace, monospace; font-size: .9em; }
+.controls ul { margin: 4px 0 8px; padding-left: 1.2em; }
+.controls li { margin: 2px 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0; }
+
+.btn {
+  font: inherit; cursor: pointer;
+  border: 1px solid var(--line); background: var(--panel); color: var(--fg);
+  border-radius: 8px; padding: 8px 14px; display: inline-block;
+}
+/* two buttons of equal width; Pause next to a wide Power button */
+.row.split > .btn { flex: 1 1 0; text-align: center; }
+#game-row { margin-top: 16px; }
+#game-row select { flex: 1 1 auto; min-width: 0; }
+.power-row { margin: 16px 0; }
+.power-row > #pause { flex: 1 1 0; }
+.power-row > #power { flex: 3 1 0; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); font-weight: 600; }
+.btn:disabled, .btn.disabled { opacity: .45; cursor: default; pointer-events: none; }
+.drop {
+  border: 2px dashed var(--line); border-radius: 10px; padding: 14px; text-align: center;
+  color: var(--muted); margin: 8px 0;
+}
+.drop.over { border-color: var(--accent); color: var(--accent); }
+.bad { color: var(--bad); } .ok { color: var(--ok); }
+
+/* the console */
+.device {
+  --size: min(100%, 440px);
+  position: relative;
+  width: var(--size);
+  aspect-ratio: 1;
+  margin: 0 auto;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--device) 80%, white), var(--device) 60%);
+  border: 3px solid var(--device-edge);
+  border-radius: 50%;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .25);
+  container-type: inline-size;
+}
+#leds {
+  /* size in % of the console (overlay adjustment "LED display"), always centred */
+  --leds: 44%;
+  position: absolute; left: calc((100% - var(--leds)) / 2); top: calc((100% - var(--leds)) / 2);
+  width: var(--leds); height: var(--leds);
+  background: #120806; border-radius: 6px;
+  image-rendering: pixelated;
+}
+.key {
+  font: inherit; font-size: .8rem; font-weight: 600; cursor: pointer;
+  border: 1px solid #45464c; color: var(--key-fg); background: radial-gradient(circle at 40% 35%, #34353a, var(--key) 70%);
+  border-radius: 50%;
+  touch-action: manipulation; user-select: none; -webkit-user-select: none;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, .55);
+}
+.key.pressed, .key:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0, 0, 0, .35); }
+.device .key {
+  position: absolute; width: 13.5%; aspect-ratio: 1; translate: -50% -50%; font-size: 2.9cqw;
+  display: grid; place-items: center; line-height: 1.05; padding: 0;
+}
+.device .key .label { position: relative; } /* pushed away from the display by console-ui.js */
+.device .key small { display: block; font-weight: 400; font-size: 2.2cqw; color: #a9a59b; }
+/* three LEDs in a triangle; drawn for key 6 (yellow on top, facing the display), rotated per key */
+.device .key .tri { position: absolute; inset: 0; pointer-events: none; }
+.device .key .tri i {
+  position: absolute; width: 17%; aspect-ratio: 1; border-radius: 50%;
+  translate: -50% -50%; background: var(--c-off); border: 1px solid rgba(0, 0, 0, .5);
+}
+.device .key .tri .y { left: 50%; top: 14%; --c: #ffd21f; --c-off: #4a4224; }
+.device .key .tri .g { left: 70%; top: 36%; --c: #39e05a; --c-off: #223f28; }
+.device .key .tri .r { left: 30%; top: 36%; --c: #ff3b30; --c-off: #4a2422; }
+.device .key .tri i.on { background: var(--c); box-shadow: 0 0 6px 2px var(--c); }
+/* picture of the printed overlay sheet; placed and rotated by console-ui.js, clicks go through */
+.device { overflow: hidden; }
+.device .overlay { position: absolute; max-width: none; z-index: 2; pointer-events: none; user-select: none; }
+.key.wide { border-radius: 8px; padding: 8px 14px; min-width: 56px; }
+
+/* status / log */
+.stats { display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px; margin: 0; }
+.stats dt { color: var(--muted); }
+.stats dd { margin: 0; font-variant-numeric: tabular-nums; }
+.log {
+  font: 12px/1.4 ui-monospace, monospace; max-height: 32vh; overflow: auto;
+  margin: 0; padding: 0 0 0 2.6em; overflow-wrap: anywhere;
+}
+pre.log { white-space: pre-wrap; padding: 8px; background: color-mix(in srgb, var(--fg) 5%, transparent); border-radius: 6px; }
+.log li { margin: 0; }
+.log .alias { color: var(--muted); }
+
+/* board */
+.board { width: 100%; display: block; margin: 0 auto; touch-action: none; overflow: visible; user-select: none; -webkit-user-select: none; }
+.board .water { fill: color-mix(in srgb, #2d7fb8 30%, var(--panel)); }
+.board .fallback .label { font: 600 30px system-ui, sans-serif; text-anchor: middle; fill: var(--fg); }
+.board.has-picture .fallback .label { display: none; }
+.board .field circle { fill: rgba(255, 255, 255, .06); stroke: #fff; stroke-opacity: .55; stroke-width: 3; stroke-dasharray: 10 8; }
+.board.has-picture .board-field circle { fill: transparent; stroke-opacity: .0; }
+.board.placing .field circle, .board .field:hover circle,
+.board.has-picture.placing .board-field circle, .board.has-picture .board-field:hover circle { stroke-opacity: .9; fill: rgba(255, 255, 255, .12); }
+/* view options (app.js): antenna areas never / on interact (above) / always, ids on antennas and keys */
+body.areas-always .board .board-field circle { stroke-opacity: .9; fill: rgba(255, 255, 255, .12); }
+body.areas-never .board .board-field circle { display: none; }
+body:not(.show-antenna-ids) .board .num { display: none; }
+body:not(.show-key-ids) .device .key .label { visibility: hidden; }
+body:not(.show-key-ids) .key-id { display: none; }
+.board .tray-field circle { fill: color-mix(in srgb, #2d7fb8 40%, var(--panel)); stroke: var(--fg); stroke-opacity: .4; stroke-dasharray: none; }
+.board .num { font: 600 22px ui-monospace, monospace; text-anchor: middle; fill: #fff; stroke: rgba(0, 0, 0, .6); stroke-width: 4; paint-order: stroke; }
+.board .tray-field .num { fill: var(--fg); stroke: none; }
+.board .dock { fill: color-mix(in srgb, var(--fg) 6%, transparent); stroke: var(--line); stroke-width: 2; stroke-dasharray: 10 10; }
+.board .docklabel { font: 600 26px system-ui, sans-serif; fill: var(--muted); }
+.board .ship { cursor: grab; }
+.board .ship .halo { fill: rgba(255, 255, 255, .55); stroke: rgba(0, 0, 0, .35); stroke-width: .6; }
+.board .ship .hull, .board .ship .sail { stroke-linejoin: round; }
+.board .ship .dot { stroke: rgba(0, 0, 0, .5); stroke-width: .8; }
+/* figure style (app.js): plain coloured circles or ships */
+body:not(.figures-ships) .board .ship :is(.hull, .sail) { display: none; }
+body.figures-ships .board .ship .dot { display: none; }
+.board .ship .hull { stroke: rgba(0, 0, 0, .6); stroke-width: .8; }
+.board .ship.dragging { cursor: grabbing; opacity: .85; }
+.board .ship.selected .halo, .board .ship:focus-visible .halo { stroke: var(--accent); stroke-width: 2; }
+.board .ship:focus-visible { outline: none; }
+/* antenna editor (board-editor.js): every area and id shown, preview of the antenna being placed */
+.board.editing { cursor: crosshair; }
+.board.board.editing .board-field circle { display: inline; stroke-opacity: .9; fill: rgba(255, 255, 255, .12); }
+body.editing-antennas .board .num { display: inline; } /* also in the drawer */
+.board .edit-layer { pointer-events: none; }
+body.editing-antennas #console-layer { pointer-events: none; }
+@media (pointer: coarse) { .pc-only { display: none; } }
+#antenna-dialog {
+  background: var(--panel); color: var(--fg); border: 1px solid var(--line); border-radius: 12px;
+  padding: 16px 18px; width: min(380px, calc(100vw - 32px));
+}
+#antenna-dialog::backdrop { background: rgba(0, 0, 0, .45); }
+#antenna-dialog h2 { font-size: 1.05rem; margin: 0 0 12px; }
+.ad-grid { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px 12px; align-items: center; }
+.ad-grid input { font: inherit; color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; min-width: 0; }
+.ad-buttons .spacer { flex: 1; }
+#ad-error:empty { display: none; }
+.board .edit-layer circle { fill: rgba(255, 210, 31, .18); stroke: #ffd21f; stroke-width: 3; stroke-dasharray: 10 8; }
+.board .edit-layer text { font: 700 30px ui-monospace, monospace; text-anchor: middle; fill: #fff; stroke: #000; stroke-width: 6; paint-order: stroke; }

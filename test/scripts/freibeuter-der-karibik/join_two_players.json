@@ -1,0 +1,27 @@
+{
+  "description": "Normal game: blue ship on Grain (antenna 17) and green ship on Rum (antenna 14) join, 2 players announced",
+  "cards": ["freibeuter-der-karibik/original"],
+  "timeoutMs": 150000,
+  "steps": [
+    { "afterFile": "sounds/intro\\.wav$", "delay": 2000, "key": 7 },
+    { "afterFile": "de/p0445\\.wav$", "delay": 4000, "key": 6 },
+    { "afterFile": "de/p0719\\.wav$", "delay": 2000, "key": 5 },
+    { "afterFile": "de/p0720\\.wav$", "delay": 2000, "key": 5 },
+    { "afterFile": "de/p0446\\.wav$", "delay": 3000, "key": 6 },
+    { "afterFile": "de/p0002\\.wav$", "delay": 2000, "place": { "ship": 1, "antenna": 17 } },
+    { "afterFile": "de/p0221\\.wav$", "delay": 1000, "place": { "ship": 2, "antenna": 14 } },
+    { "afterFile": "de/p0221\\.wav$", "delay": 2000, "key": 6 }
+  ],
+  "expectFiles": [
+    "sounds/intro\\.wav$",
+    "de/p0231\\.wav$",
+    "de/p0809\\.wav$",
+    "de/p0056\\.wav$",
+    "de/p0289\\.wav$",
+    "de/p0221\\.wav$",
+    "de/p0292\\.wav$",
+    "de/p0221\\.wav$",
+    "de/p0242\\.wav$",
+    "de/p0240\\.wav$"
+  ]
+}

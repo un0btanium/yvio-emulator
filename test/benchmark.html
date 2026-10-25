@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yvio Emulator Benchmark</title>
+<style>
+  :root { --bg: #f6f4ef; --fg: #1d1d1b; --muted: #6b6a66; --line: #d9d5cc; --accent: #1f5f8b; --ok: #2c7a3f; --bad: #a33; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg: #161615; --fg: #ecebe6; --muted: #9a988f; --line: #33322e; --accent: #6aaee0; --ok: #6cc184; --bad: #e77; }
+  }
+  :root[data-theme="dark"] { --bg: #161615; --fg: #ecebe6; --muted: #9a988f; --line: #33322e; --accent: #6aaee0; --ok: #6cc184; --bad: #e77; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; background: var(--bg); color: var(--fg); font: 15px/1.45 system-ui, sans-serif; max-width: 860px; margin-inline: auto; }
+  h1 { font-size: 1.25rem; margin: 0 0 4px; }
+  p.sub { color: var(--muted); margin: 0 0 16px; }
+  fieldset { border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin: 0 0 12px; }
+  legend { color: var(--muted); padding: 0 4px; }
+  label { display: block; margin: 4px 0; }
+  button { font: inherit; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--accent); background: var(--accent); color: var(--bg); margin: 4px 8px 4px 0; }
+  button:disabled { opacity: .4; }
+  #status { font-weight: 600; }
+  .ok { color: var(--ok); } .bad { color: var(--bad); }
+  dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px; margin: 0; }
+  dt { color: var(--muted); }
+  pre { background: color-mix(in srgb, var(--fg) 6%, transparent); border-radius: 6px; padding: 8px; font-size: 12px; overflow-x: auto; max-height: 40vh; }
+</style>
+</head>
+<body>
+<h1>Emulator benchmark</h1>
+<p class="sub">Milestone 1 go/no-go: Unicorn.js speed and syscall tracing. Your game files stay in this tab's memory and are not uploaded anywhere.</p>
+
+<fieldset>
+  <legend>Game files</legend>
+  <label>SD card folder: <input type="file" id="dir" webkitdirectory multiple></label>
+  <label>or a .zip of the card: <input type="file" id="zip" accept=".zip,application/zip"></label>
+  <div id="files">No files loaded.</div>
+</fieldset>
+
+<fieldset>
+  <legend>Run</legend>
+  <button id="bench" disabled>Benchmark (15 s virtual, full speed)</button>
+  <button id="play" disabled>Play in real time with sound</button>
+  <button id="stop" disabled>Stop</button>
+  <div id="status">Idle</div>
+  <dl id="stats"></dl>
+</fieldset>
+
+<pre id="trace"></pre>
+
+<script type="module">
+import { Vfs } from '../yvio-emulator/files.js';
+import { createCpu } from '../yvio-emulator/cpu.js';
+import { Machine, AUDIO_RATE } from '../yvio-emulator/machine.js';
+
+const $ = id => document.getElementById(id);
+let vfs = null, stopFlag = false;
+
+function stat(name, value) {
+  const dl = $('stats');
+  let dd = dl.querySelector(`[data-k="${name}"]`);
+  if (!dd) {
+    const dt = document.createElement('dt'); dt.textContent = name;
+    dd = document.createElement('dd'); dd.dataset.k = name; dd.style.margin = 0;
+    dl.append(dt, dd);
+  }
+  dd.textContent = value;
+}
+
+async function setVfs(promise) {
+  $('files').textContent = 'Reading…';
+  try {
+    vfs = await promise;
+    const game = vfs.games()[0];
+    $('files').innerHTML = !game
+      ? '<span class="bad">No game folder with an app.elf found.</span>'
+      : `<span class="ok">${vfs.files.size} files loaded (${game}/app.elf).</span>`;
+    $('bench').disabled = $('play').disabled = !game;
+  } catch (e) {
+    $('files').innerHTML = `<span class="bad">${e.message}</span>`;
+  }
+}
+$('dir').onchange = e => setVfs(Vfs.fromFileList(e.target.files));
+$('zip').onchange = e => setVfs(e.target.files[0].arrayBuffer().then(b => Vfs.fromZip(new Uint8Array(b))));
+
+async function boot() {
+  $('stats').textContent = '';
+  stat('user agent', navigator.userAgent);
+  const t0 = performance.now();
+  const cpu = await createCpu('unicorn');
+  stat('Unicorn.js load', `${(performance.now() - t0).toFixed(0)} ms (first load includes download)`);
+  const lines = [];
+  let firstWav = null;
+  const m = await Machine.create({
+    vfs, cpu, appPath: `${vfs.games()[0]}/app.elf`,
+    log: l => lines.push(`[log] ${l}`),
+    trace: (t, task, n, text) => {
+      if (!firstWav && !text.startsWith('os_get_time_ms') && lines.length < 400)
+        lines.push(`[${t.toFixed(3).padStart(9)} ms] ${task.padEnd(14)} ${text}`);
+    },
+  });
+  m.kuma.on.fileOpen = (p, ok) => { if (ok && /\.wav$/i.test(p) && !firstWav) { firstWav = p; lines.push(`[file] first wav: ${p}`); } };
+  return { m, lines, flush: () => { $('trace').textContent = lines.join('\n'); } };
+}
+
+const yieldUi = () => new Promise(r => setTimeout(r, 0));
+
+$('bench').onclick = async () => {
+  setRunning(true);
+  const { m, flush } = await boot();
+  $('status').textContent = 'Benchmarking…';
+  const t0 = performance.now();
+  while (!stopFlag && m.kernel.timeMs < 15000) {
+    const r = m.runFor(100);
+    if (r !== 'time') break;
+    stat('progress', `${(m.kernel.timeMs / 1000).toFixed(1)} s virtual`);
+    await yieldUi();
+  }
+  const wall = performance.now() - t0;
+  const x = m.kernel.timeMs / wall;
+  stat('result', `${(m.kernel.timeMs / 1000).toFixed(1)} s virtual in ${(wall / 1000).toFixed(2)} s wall = ${x.toFixed(2)}× real time`);
+  stat('audio buffers', `${m.audioBuffers} (${(m.audioBuffers * 128 / AUDIO_RATE).toFixed(1)} s of sound mixed)`);
+  stat('halted', m.halted ?? 'no');
+  $('status').innerHTML = x >= 1.5 ? `<span class="ok">GO: ${x.toFixed(2)}× real time</span>` : `<span class="bad">Too slow: ${x.toFixed(2)}× real time</span>`;
+  flush();
+  setRunning(false);
+};
+
+$('play').onclick = async () => {
+  setRunning(true);
+  const ac = new AudioContext();
+  await ac.resume();
+  const { m, flush } = await boot();
+  let pending = [];
+  m.onAudio = pcm => pending.push(pcm.slice());
+  const LEAD = 0.15; // seconds of audio scheduled ahead
+  const startAt = ac.currentTime + LEAD;
+  let cursor = startAt, late = 0;
+  $('status').textContent = 'Playing…';
+  while (!stopFlag && !m.halted) {
+    const target = (ac.currentTime - startAt + LEAD) * 1000;
+    if (target > m.kernel.timeMs) m.runFor(target - m.kernel.timeMs);
+    if (pending.length) {
+      const n = pending.reduce((a, b) => a + b.length, 0);
+      const buf = ac.createBuffer(1, n, AUDIO_RATE);
+      const ch = buf.getChannelData(0);
+      let o = 0;
+      for (const p of pending) for (const v of p) ch[o++] = v / 32768;
+      pending = [];
+      if (cursor < ac.currentTime) { late++; cursor = ac.currentTime + 0.02; }
+      const src = ac.createBufferSource();
+      src.buffer = buf; src.connect(ac.destination); src.start(cursor);
+      cursor += n / AUDIO_RATE;
+    }
+    stat('virtual time', `${(m.kernel.timeMs / 1000).toFixed(1)} s`);
+    stat('audio underruns', String(late));
+    await new Promise(r => setTimeout(r, 20));
+  }
+  stat('halted', m.halted ?? 'no');
+  flush();
+  await ac.close();
+  $('status').textContent = 'Stopped';
+  setRunning(false);
+};
+
+$('stop').onclick = () => { stopFlag = true; };
+function setRunning(on) {
+  stopFlag = false;
+  $('bench').disabled = $('play').disabled = on || !vfs;
+  $('stop').disabled = !on;
+}
+</script>
+</body>
+</html>

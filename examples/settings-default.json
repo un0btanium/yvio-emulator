@@ -1,0 +1,30 @@
+{
+  "Figures": {
+    "Show as": "Basic"
+  },
+  "Console": {
+    "Audio volume": 80,
+    "Console size": 33,
+    "Show unused OS keys": false
+  },
+  "Console Overlay": {
+    "Opacity": 60,
+    "Rotate 90°": 0,
+    "Rotate": 0,
+    "Zoom": 0,
+    "LED display": 44,
+    "Stretch ↔": 0,
+    "Stretch ↕": 0,
+    "Left/right": 0,
+    "Up/down": 0
+  },
+  "Additional Overlays & Views": {
+    "Antenna Areas": "On interact",
+    "Unused Antennas": false,
+    "Antenna Ids": false,
+    "Console Button Ids": false
+  },
+  "Fullscreen": {
+    "Keep the screen awake while playing": true
+  }
+}

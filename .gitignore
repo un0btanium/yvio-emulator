@@ -1,0 +1,25 @@
+# Game files and game artwork are copyrighted: never commit or publish them.
+# SD-card copies for the tests (folders or links), see test/scripts/README.md
+/cards/
+# The user's photos of the board and the console overlay sheet
+/board.png
+/console_overlay.png
+# Antenna layouts with the game's place names (local only); the example without names is committed
+board-antennas-*.json
+!board-antennas-*example.json
+# Safety net for anything taken from the card
+*.elf
+*.wav
+*.zip
+*.img
+/pirates/
+/system/
+/menu/
+/osup/
+# Test output and local tooling
+/build/
+node_modules/
+# Personal Claude Code notes (names the private repo and local setup)
+CLAUDE.local.md
+# IDE settings
+/.idea/

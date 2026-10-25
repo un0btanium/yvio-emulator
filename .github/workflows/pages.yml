@@ -1,0 +1,69 @@
+# Deploys the page to GitHub Pages on every push to main (and by hand from the Actions tab).
+# Only the files the page needs are published (of test/ only the phone benchmark page); the deploy stops if the site would
+# contain anything but our own code. The game tests need a card, so only test/settings.js and test/files.js run here.
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Syntax check
+        run: for f in ui/*.js yvio-emulator/*.js test/*.js test/browser/*.js; do node --check "$f"; done
+
+      - name: Settings file check
+        run: node test/settings.js
+
+      - name: Virtual SD card check
+        run: node test/files.js
+
+      - name: Collect the site
+        run: |
+          mkdir _site
+          cp index.html LICENSE _site/
+          cp -r ui yvio-emulator vendor examples _site/
+          mkdir _site/test && cp test/benchmark.html _site/test/
+
+      - name: Check the site contains only our own code
+        run: |
+          bad=$(cd _site && find . -type f \
+            ! -name '*.html' ! -name '*.js' ! -name '*.css' ! -name '*.json' \
+            ! -name 'LICENSE' ! -name 'COPYING.LGPL2' ! -name 'COPYING_GLIB' ! -name 'README.md')
+          layouts=$(cd _site && find . -name 'board-antennas-*.json' ! -name 'board-antennas-example.json')
+          if [ -n "$bad$layouts" ]; then echo "Not allowed on the site:"; echo "$bad$layouts"; exit 1; fi
+          find _site -type f | sort
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

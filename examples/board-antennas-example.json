@@ -1,0 +1,16 @@
+{
+  "boardAntennas": [
+    {"antennaId": 18, "boardCoords": {"x": 245, "y": 190}, "fallbackName": "", "radius": 70},
+    {"antennaId": 19, "boardCoords": {"x": 400, "y": 115}, "fallbackName": "", "radius": 70},
+    {"antennaId": 0, "boardCoords": {"x": 680, "y": 195}, "fallbackName": "", "radius": 70},
+    {"antennaId": 4, "boardCoords": {"x": 860, "y": 310}, "fallbackName": "", "radius": 70},
+    {"antennaId": 12, "boardCoords": {"x": 120, "y": 760}, "fallbackName": "", "radius": 70},
+    {"antennaId": 10, "boardCoords": {"x": 405, "y": 740}, "fallbackName": "", "radius": 70},
+    {"antennaId": 7, "boardCoords": {"x": 691, "y": 710}, "fallbackName": "", "radius": 70},
+    {"antennaId": 5, "boardCoords": {"x": 917, "y": 710}, "fallbackName": "", "radius": 70},
+    {"antennaId": 17, "boardCoords": {"x": 62, "y": 258}, "fallbackName": "", "radius": 50},
+    {"antennaId": 16, "boardCoords": {"x": 62, "y": 365}, "fallbackName": "", "radius": 50},
+    {"antennaId": 15, "boardCoords": {"x": 62, "y": 465}, "fallbackName": "", "radius": 50},
+    {"antennaId": 14, "boardCoords": {"x": 62, "y": 575}, "fallbackName": "", "radius": 50}
+  ]
+}

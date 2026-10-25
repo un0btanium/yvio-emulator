@@ -1,0 +1,9 @@
+{
+    "type": "module",
+    "private": true,
+    "name": "yvio-emulator",
+    "scripts": {
+        "trace": "node test/run.js --trace --quiet-time --until-wav"
+    },
+    "license": "GPL-2.0-or-later"
+}

@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Yvio Emulator</title>
+<link rel="stylesheet" href="ui/style.css">
+</head>
+<body>
+<div id="stage">
+<div id="play">
+  <!-- settings: left of the board (above it in portrait); opens on load -->
+  <aside id="settings" class="side" aria-labelledby="settings-title">
+    <div class="settings-head">
+      <h1 id="settings-title">Yvio Emulator <span>by unobtanium</span></h1>
+      <button class="icon-btn" id="close-settings" type="button" aria-label="Close" title="Close">×</button>
+    </div>
+
+    <details data-section="console" open>
+      <summary>Console</summary>
+      <p class="muted small">Load your copy of the game SD card: the folder (or a zip of it) that contains
+        the game folder (e.g. <code>pirates/</code>). The files stay on this device; nothing is uploaded.
+        An <code>emulator/</code> folder next to it may hold <code>board.png</code>,
+        <code>console_overlay.png</code>, <code>board-antennas.json</code> and <code>settings.json</code>;
+        they are used automatically.</p>
+      <div class="row split">
+        <label class="btn">Choose folder<input type="file" id="pick-dir" webkitdirectory multiple hidden></label>
+        <label class="btn">Choose .zip<input type="file" id="pick-zip" accept=".zip,application/zip" hidden></label>
+      </div>
+      <!-- the loading status replaces the drop hint -->
+      <div id="drop" class="drop"><span id="load-status" role="status">or drop the folder or .zip here</span></div>
+      <!-- shown if the card has more than one game folder -->
+      <label class="check" id="game-row" hidden>Game <select id="game"></select></label>
+      <div class="row power-row">
+        <button id="pause" class="btn" type="button" disabled>Pause</button>
+        <button id="power" class="btn primary" type="button" disabled>Power on</button>
+      </div>
+      <!-- the console's OS keys; the game does not use them (no OS menu, volume is set here) -->
+      <div class="row" id="os-keys" hidden>
+        <span class="muted small">OS keys:</span>
+        <button class="key wide" data-key="12" type="button" title="Menu, key 12">Menu<span class="key-id"> (12)</span></button>
+        <button class="key wide" data-key="13" type="button" title="Volume −, key 13">Vol −<span class="key-id"> (13)</span></button>
+        <button class="key wide" data-key="14" type="button" title="Volume +, key 14">Vol +<span class="key-id"> (14)</span></button>
+      </div>
+      <details class="controls">
+        <summary>Controls</summary>
+        <ul class="muted small">
+          <li>Figures: drag-and-drop one onto an antenna area, or tap it and then tap the area.
+            Drag-and-drop it back into the drawer to take it off the board.</li>
+          <li>Press the buttons around the LED display.</li>
+          <li>Tap the LED display to enlarge the console; tap it or next to it to shrink it again.</li>
+          <li>Gear button (bottom left of the board): these settings.
+            Button at the bottom right: the “Off The Board” drawer with the figures.</li>
+        </ul>
+      </details>
+    </details>
+
+    <details data-section="pictures" open>
+      <summary>Board &amp; Pictures</summary>
+      <p class="muted small">Photos of your own board and console overlay sheet, and where the antennas sit on the
+        board (a <code>.json</code> file, see <code>examples/board-antennas-example.json</code>). The files stay on this device; nothing is uploaded.
+        The ones in the card's <code>emulator/</code> folder are loaded with the card.</p>
+      <div class="row">
+        <label class="btn">Board antennas…<input type="file" id="pick-antennas" accept=".json,application/json" hidden></label>
+        <button id="antennas-reset" class="btn" type="button">Reset</button>
+        <!-- antenna editor (PC only): the button turns into "Save Antennas" while editing; Clear All and Cancel show then -->
+        <button id="antennas-edit" class="btn pc-only" type="button">Editor</button>
+        <button id="antennas-edit-clear" class="btn" type="button" hidden>Clear All</button>
+        <button id="antennas-edit-cancel" class="btn" type="button" hidden>Cancel</button>
+        <span class="muted small" id="antennas-status"></span>
+      </div>
+      <div class="row">
+        <label class="btn">Board picture…<input type="file" id="pick-picture" accept="image/*" hidden></label>
+        <span class="muted small" id="picture-status"></span>
+      </div>
+      <div class="row">
+        <label class="btn">Console overlay…<input type="file" id="pick-overlay" accept="image/*" hidden></label>
+        <span class="muted small" id="overlay-status"></span>
+      </div>
+    </details>
+
+    <details data-section="settings">
+      <summary>Settings</summary>
+      <!-- the settings below as a file (ui/settings.js; example: examples/settings-default.json) -->
+      <div class="row">
+        <button id="settings-save" class="btn" type="button">Save</button>
+        <label class="btn">Load…<input type="file" id="pick-settings" accept=".json,application/json" hidden></label>
+        <span class="muted small" id="settings-status"></span>
+      </div>
+      <h3>Figures</h3>
+      <label class="check">Show as
+        <select id="view-figures">
+          <option value="basic">Basic</option>
+          <option value="ships">Ships</option>
+        </select>
+      </label>
+      <h3>Console</h3>
+      <div class="sliders">
+        <label>Audio volume <input type="range" id="volume" min="0" max="100" value="80"></label>
+        <label>Console size <input type="range" id="console-size" min="25" max="45" step="0.5" value="33"></label>
+      </div>
+      <label class="check"><input type="checkbox" id="view-os-keys"> Show unused OS keys</label>
+      <!-- shown once an overlay picture is loaded -->
+      <div id="overlay-adjust" hidden>
+        <h3>Console Overlay</h3>
+        <div class="row">
+          <button id="overlay-rotate" class="btn" type="button">Rotate 90°</button>
+          <button id="overlay-reset" class="btn" type="button">Reset</button>
+        </div>
+        <div class="sliders">
+          <label>Opacity <input type="range" id="overlay-opacity" min="0" max="100" value="60"></label>
+          <label>Rotate <input type="range" id="overlay-tilt" min="-20" max="20" step="0.25" value="0"></label>
+          <label>Zoom <input type="range" id="overlay-zoom" min="-50" max="50" step="0.5" value="0"></label>
+          <label>LED display <input type="range" id="overlay-leds" min="30" max="56" step="0.25" value="44"></label>
+          <label>Stretch ↔ <input type="range" id="overlay-sx" min="-25" max="25" step="0.25" value="0"></label>
+          <label>Stretch ↕ <input type="range" id="overlay-sy" min="-25" max="25" step="0.25" value="0"></label>
+          <label>Left/right <input type="range" id="overlay-x" min="-25" max="25" step="0.25" value="0"></label>
+          <label>Up/down <input type="range" id="overlay-y" min="-25" max="25" step="0.25" value="0"></label>
+        </div>
+      </div>
+      <h3>Additional Overlays &amp; Views</h3>
+      <div class="views">
+        <label class="check">Antenna Areas
+          <select id="view-areas">
+            <option value="never">Never</option>
+            <option value="interact">On interact</option>
+            <option value="always">Always</option>
+          </select>
+        </label>
+        <label class="check"><input type="checkbox" id="view-unused"> Unused Antennas</label>
+        <label class="check"><input type="checkbox" id="view-antenna-ids"> Antenna Ids</label>
+        <label class="check"><input type="checkbox" id="view-key-ids"> Console Button Ids</label>
+      </div>
+      <h3>Fullscreen</h3>
+      <div class="row">
+        <button id="fullscreen" class="btn" type="button">Fullscreen</button>
+        <label id="wake-lock-row" class="check"><input type="checkbox" id="wake-lock"> Keep the screen awake while playing</label>
+      </div>
+    </details>
+
+    <details data-section="status">
+      <summary>Status &amp; Logs</summary>
+      <dl class="stats">
+        <dt>App</dt><dd id="st-app">–</dd>
+        <dt>Game time</dt><dd id="st-time">–</dd>
+        <dt>Speed</dt><dd id="st-speed">–</dd>
+        <dt>Audio</dt><dd id="st-audio">–</dd>
+      </dl>
+      <h3>Announcements</h3>
+      <ol id="sounds" class="log" reversed></ol>
+      <details>
+        <summary>Log</summary>
+        <pre id="log" class="log"></pre>
+      </details>
+    </details>
+
+    <details data-section="about">
+      <summary>About</summary>
+      <p class="muted small">Unofficial fan project, not affiliated with or endorsed by the makers of
+        Yvio or "Freibeuter der Karibik"; all trademarks belong to their owners. No game files,
+        sounds or artwork are included: you need your own copy of the game's SD card.</p>
+      <p class="muted small">Emulator code: GPL-2.0-or-later. CPU: Unicorn.js / Unicorn / QEMU (GPL-2.0).
+        See <code>LICENSE</code> and <code>vendor/unicorn/README.md</code> in the source.</p>
+      <p class="muted small">Source code: <a href="https://github.com/un0btanium/yvio-emulator" target="_blank" rel="noopener">github.com/un0btanium/yvio-emulator</a></p>
+    </details>
+  </aside>
+
+  <!-- drawer "Off The Board": ships off the board, antennas with an unknown place on the board -->
+  <aside id="tray" class="side" aria-label="Off the board" hidden>
+    <div class="side-head">
+      <span>Off The Board</span>
+      <button class="icon-btn" id="close-tray" type="button" aria-label="Close" title="Close">×</button>
+    </div>
+    <div id="tray-board"></div>
+  </aside>
+
+  <main id="board-area">
+    <div id="board-box">
+      <div id="board"></div>
+      <!-- the console stands on the whirlpool in the middle of the board -->
+      <div id="console-layer">
+        <div class="device" id="device">
+          <!-- keys 0..11 are placed around the display by console-ui.js -->
+          <canvas id="leds" width="240" height="240" aria-label="12×12 LED display" title="Tap to enlarge"></canvas>
+          <img id="overlay" class="overlay" alt="" hidden>
+        </div>
+      </div>
+      <button class="corner-btn left" id="open-settings" type="button" aria-label="Settings" title="Settings">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm8.6 5.1-1.8-.3a7 7 0 0 1-.6 1.5l1.1 1.5-1.7 1.7-1.5-1.1a7 7 0 0 1-1.5.6l-.3 1.8h-2.4l-.3-1.8a7 7 0 0 1-1.5-.6l-1.5 1.1-1.7-1.7 1.1-1.5a7 7 0 0 1-.6-1.5l-1.8-.3v-2.4l1.8-.3a7 7 0 0 1 .6-1.5L4.6 7.3 6.3 5.6l1.5 1.1a7 7 0 0 1 1.5-.6l.3-1.8h2.4l.3 1.8a7 7 0 0 1 1.5.6l1.5-1.1 1.7 1.7-1.1 1.5a7 7 0 0 1 .6 1.5l1.8.3Z"/></svg>
+      </button>
+      <button class="corner-btn right" id="open-tray" type="button" aria-label="Off the board" title="Off the board">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h16"/><circle cx="18" cy="12" r="2.2"/></svg>
+      </button>
+    </div>
+  </main>
+</div>
+</div>
+<div id="enlarge-backdrop" hidden></div>
+
+<!-- antenna editor: id, name, position and radius of an antenna -->
+<dialog id="antenna-dialog">
+  <form method="dialog">
+    <h2 id="ad-title">Add antenna</h2>
+    <div class="ad-grid">
+      <label for="ad-id">Antenna id</label><select id="ad-id"></select>
+      <label for="ad-name">Name</label><input id="ad-name" type="text" placeholder="optional, shown without a board picture">
+      <label for="ad-x">X</label><input id="ad-x" type="number" min="0" max="1024" step="1" required>
+      <label for="ad-y">Y</label><input id="ad-y" type="number" min="0" max="1024" step="1" required>
+      <label for="ad-radius">Radius</label><input id="ad-radius" type="number" required>
+    </div>
+    <p id="ad-error" class="bad small" role="alert"></p>
+    <div class="row ad-buttons">
+      <button id="ad-delete" class="btn" type="button">Delete</button>
+      <span class="spacer"></span>
+      <button id="ad-cancel" class="btn" type="button">Cancel</button>
+      <button id="ad-ok" class="btn primary" type="submit">Add</button>
+    </div>
+  </form>
+</dialog>
+
+
+<script type="module" src="ui/app.js"></script>
+</body>
+</html>

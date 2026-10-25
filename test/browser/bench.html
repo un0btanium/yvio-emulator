@@ -1,0 +1,48 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Emulator Bench</title>
+<!-- Test-only page (not part of the page): serve the repo root on localhost and open
+     /test/browser/bench.html?card=/cards/freibeuter-der-karibik/original/ — it fetches the card via the server's directory listing. -->
+<pre id="out">running…</pre>
+<script type="module">
+import { Vfs } from '../../yvio-emulator/files.js';
+import { createCpu } from '../../yvio-emulator/cpu.js';
+import { Machine } from '../../yvio-emulator/machine.js';
+
+const params = new URLSearchParams(location.search);
+const card = params.get('card') ?? '/cards/freibeuter-der-karibik/original/';
+const seconds = Number(params.get('s') ?? 15);
+const out = document.getElementById('out');
+
+async function listing(url) {
+  const html = await (await fetch(url)).text();
+  const hrefs = [...html.matchAll(/href="([^"?#]+)"/g)].map(m => decodeURIComponent(m[1]));
+  const files = [];
+  for (const h of hrefs) {
+    if (h.startsWith('/') || h.startsWith('..')) continue;
+    if (h.endsWith('/')) files.push(...await listing(url + h));
+    else files.push(url + h);
+  }
+  return files;
+}
+
+try {
+  const t0 = performance.now();
+  const vfs = new Vfs();
+  const urls = await listing(card);
+  await Promise.all(urls.map(async u => vfs.add(u.slice(card.length), new Uint8Array(await (await fetch(u)).arrayBuffer()))));
+  const tFiles = performance.now() - t0;
+  const t1 = performance.now();
+  const cpu = await createCpu('unicorn');
+  const tCpu = performance.now() - t1;
+  const m = await Machine.create({ vfs, cpu });
+  const t2 = performance.now();
+  while (m.kernel.timeMs < seconds * 1000 && m.runFor(100) === 'time') await new Promise(r => setTimeout(r, 0));
+  const wall = performance.now() - t2;
+  window.benchResult = { files: vfs.files.size, tFiles, tCpu, virtualMs: m.kernel.timeMs, wall,
+    x: m.kernel.timeMs / wall, audioBuffers: m.audioBuffers, halted: m.halted, ua: navigator.userAgent };
+} catch (e) {
+  window.benchResult = { error: String(e.stack ?? e) };
+}
+out.textContent = JSON.stringify(window.benchResult, null, 2);
+</script>
