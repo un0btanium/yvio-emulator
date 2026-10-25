@@ -9,6 +9,8 @@
 // Finally it powers the console off and on again and checks that it boots once more.
 // With --extras the card must bring emulator/board.png, console_overlay.png and board-antennas.json;
 // with --card-settings also emulator/settings.json.
+// With --language CODE the card must offer a Language choice; the test picks CODE before power on and
+// checks that the announcements come from sounds/CODE/ (also after the power off → on cycle).
 // With --settings FILE it loads FILE through Settings → Load…, checks the figures, console size and
 // antenna ids on the page, then presses Save (download into FILE's folder) and compares the saved
 // file with FILE. The browser must be able to write there.
@@ -111,8 +113,17 @@ await ev("document.getElementById('antennas-edit-clear').click(), 1");
 check(await fields() === 0, 'Clear All empties the board');
 await ev("document.getElementById('antennas-edit-cancel').click(), 1");
 check(await fields() === before0 && await ev("document.getElementById('antennas-edit-clear').hidden"), 'Cancel restores the layout and hides Clear All');
+// language: shown only for a game with two or more languages in its lang.txt
+const language = opt('--language');
+const languages = await ev("[...document.getElementById('language').options].map(o => o.value).join(',')");
+if (language) {
+  check(!await ev("document.getElementById('language-row').hidden") && languages.split(',').includes(language), `language choice offers ${language} (${languages})`);
+  await ev(`(s => { s.value = ${JSON.stringify(language)}; s.dispatchEvent(new Event('change')); return 1; })(document.getElementById('language'))`);
+} else console.log(`     language choice: ${await ev("document.getElementById('language-row').hidden") ? 'hidden' : 'shown'} (${languages || 'no lang.txt'})`);
+const fromLanguage = () => (language ? ev(`[...document.querySelectorAll('#sounds li')].filter(l => /p\\d{4}\\.wav/.test(l.textContent)).every(l => l.title.includes('/${language}/'))`) : true);
 await ev("document.getElementById('power').click(), 1");
 check(await waitFor("[...document.querySelectorAll('#sounds li')].some(l => /intro\\.wav/.test(l.textContent))"), 'intro.wav plays');
+check(await ev("document.getElementById('language').disabled"), 'language choice locked while powered on');
 check(await waitFor("document.getElementById('load-status').textContent === 'Playing…'", 5000) && !await ev("document.getElementById('settings').hidden"), 'status: Playing… (no load info), settings stay open');
 await ev("document.getElementById('pause').click(), 1");
 check(await statusSays('Paused.'), 'status: Paused.');
@@ -123,6 +134,7 @@ const lit = await ev("[...document.querySelectorAll('.device .key')].filter(b =>
 check(lit === '7', `key 7 LED lit during intro (lit: ${lit || 'none'})`);
 await key(7);
 check(await waitFor("[...document.querySelectorAll('#sounds li')].some(l => /p0231/.test(l.textContent))"), 'key 7 skips to welintro p0231');
+if (language) check(await fromLanguage(), `announcements from sounds/${language}/`);
 check(await waitFor("[...document.querySelectorAll('#sounds li')].some(l => /p0445/.test(l.textContent))", 45000), 'welintro reaches p0445');
 await sleep(3000);
 await key(6);
@@ -162,8 +174,10 @@ const before = await intros();
 await ev("document.getElementById('power').click(), 1");
 check(await waitFor("document.getElementById('log').textContent.includes('powered off') && !document.getElementById('power').disabled"), 'power off hands the card back');
 check(await waitFor("document.getElementById('load-status').textContent === 'Ready!'", 5000), `status after power off: ${await loadStatus()}`);
+if (language) check(await ev(`!document.getElementById('language').disabled && document.getElementById('language').value === ${JSON.stringify(language)}`), `language still ${language} after power off`);
 await ev("document.getElementById('power').click(), 1");
 check(await waitFor(`[...document.querySelectorAll('#sounds li')].filter(l => /intro\\.wav/.test(l.textContent)).length > ${before}`), 'power on boots again (intro.wav)');
+if (language) check(await fromLanguage(), `all announcements from sounds/${language}/`);
 console.log('status:', await ev("document.querySelector('.stats').innerText.replace(/\\n/g, ' | ')"));
 console.log('announcements:\n' + await sounds());
 const shot = opt('--shot');

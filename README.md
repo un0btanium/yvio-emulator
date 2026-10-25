@@ -20,17 +20,19 @@ LED display, keys and sound, and a virtual RFID board for the game figures.
 ## Supported Games 
 
  * Freibeuter der Karibik 1.0
+ * Freibeuter der Karibik 1.1
 
-Currently, only the board game **Freibeuter der Karibik 1.0** is supported by the project. Version 
-1.1 might also work, but has not been tested yet. Other games have not been tested yet.
+Currently, only the board game **Freibeuter der Karibik** is supported by the project. Version 1.0 and 1.1 seem to work. Version 1.1 also speaks English: choose it under **Console → Language** before Power on. Other games have not been tested yet.
 
 However, the project has already been designed in a modular and customizable way, 
 so additional game support should be easy to add in the future.
 
 You can already try the SD cards of other Yvio games: the emulator uses the game folder at the
 card root (any folder with an `app.elf` other than `emulator/`, `menu/`, `osup/` and `system/`;
-`pirates/` for Freibeuter). If a card has several, choose one under **Console → Game**. Whether
-another game runs is untested.
+`pirates/` for Freibeuter). If a card has several, choose one under **Console → Game**. A game
+with more than one language in its `lang.txt` shows **Console → Language**; the choice is written
+into the card copy's `lang.txt` (as the game's own menu does) and applies at the next Power on.
+Whether another game runs is untested.
 
 
 ## Quick Start - How to play
@@ -187,6 +189,7 @@ node test/run.js --ms 15000 --wav build/boot.wav     # 15 s headless, dump the m
 node test/run.js test/scripts/freibeuter-der-karibik/mode_choice.json   # scripted run with assertions
 node test/run.js --files --display --press 3000:7     # file log, ASCII display, press key 7 at 3 s
 node test/run.js --app OTHER/app.elf --card cards/OTHER-GAME/original   # another game folder
+node test/run.js --language en --card cards/freibeuter-der-karibik/original-v1.1   # a language of lang.txt
 ```
 Browser smoke test: serve this folder on port 8765 (`python3 -m http.server 8765`), start a
 headless Chromium-based browser with `--remote-debugging-port=9333` (it must be able to read the
@@ -194,7 +197,7 @@ zip), then `node test/browser/ui-smoke.js http://127.0.0.1:8765/index.html CARD.
 (boot, intro, mode choice, ships from the drawer onto the goods fields, power off and on). With
 `--extras` it also checks that the zip's `emulator/` pictures and layout are used,
 `--card-settings` its `settings.json`, and `--settings FILE` loads FILE with Load… and compares
-what Save writes. `node test/settings.js` and `node test/files.js` (card root and game folders) need no card (they also run in the Pages workflow).
+what Save writes. `node test/settings.js` and `node test/files.js` (card root, game folders, lang.txt) need no card (they also run in the Pages workflow).
 `test/browser/bench.html?card=/cards/freibeuter-der-karibik/original/` measures the speed of the core in a browser.
 
 ## Deployment

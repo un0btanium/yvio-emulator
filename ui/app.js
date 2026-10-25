@@ -293,7 +293,7 @@ if ('wakeLock' in navigator) {
 // ---- loading the SD card -----------------------------------------------------------------
 /** @type {Vfs|null} */
 let vfs = null;
-/** sound file name (lower case, e.g. "p0719.wav") -> aliases from files_de.txt */
+/** sound file name (lower case, e.g. "p0719.wav") -> aliases from files_LANG.txt */
 const aliases = new Map();
 /** what the last card load brought ("Loaded: N game files, M emulator files."), until power on */
 let loadInfo = '';
@@ -343,11 +343,34 @@ function showGames(games) {
 }
 function useGame(name) {
   game = name;
-  readAliases(vfs?.get(`${game}/files_de.txt`) ?? new Uint8Array());
+  showLanguages(store.get('language'));
 }
 $('game').addEventListener('change', e => {
   store.set('game', e.target.value);
   useGame(e.target.value);
+});
+
+// The game's languages (GAME/lang.txt, e.g. "de" and "en" on Freibeuter der Karibik 1.1). With
+// more than one the Console section shows a choice, remembered in the browser; it is written into
+// the card's lang.txt (as the game's own menu does) and applies at the next Power on.
+/** @param {string} [want]  the language code to select if the game has it, else the card's own choice */
+function showLanguages(want) {
+  const langs = vfs?.languages(game);
+  const sel = /** @type {HTMLSelectElement} */ ($('language'));
+  sel.replaceChildren(...(langs?.languages ?? []).map(l => new Option(`${l.name} (${l.code})`, l.code)));
+  $('language-row').hidden = (langs?.languages.length ?? 0) < 2;
+  if (!langs) return useLanguage('de');
+  const codes = langs.languages.map(l => l.code);
+  sel.value = codes.includes(want) ? want : codes[langs.selected];
+  useLanguage(sel.value);
+}
+function useLanguage(code) {
+  vfs?.setLanguage(game, code);
+  readAliases(vfs?.get(`${game}/files_${code}.txt`) ?? new Uint8Array());
+}
+$('language').addEventListener('change', e => {
+  store.set('language', e.target.value);
+  useLanguage(e.target.value);
 });
 
 // The page's own extras can sit on the card copy in an emulator/ folder (all optional): the board
@@ -506,7 +529,7 @@ async function powerOn() {
   $('pause').disabled = false;
   $('power').textContent = 'Power off';
   $('power').disabled = false;
-  $('game').disabled = true; // the choice applies at the next Power on
+  $('game').disabled = $('language').disabled = true; // the choices apply at the next Power on
   loadInfo = ''; // from now on only the state
   showLoadStatus();
   updateWakeLock();
@@ -533,6 +556,10 @@ function onShutdown(files) {
   if (files) {
     vfs = new Vfs();
     for (const [path, buf] of files) vfs.add(path, new Uint8Array(buf));
+    // the game's own menu may have changed the language: follow the card
+    const langs = vfs.languages(game);
+    if (langs && langs.languages.length > 1) store.set('language', langs.languages[langs.selected].code);
+    showLanguages(store.get('language'));
     showLoadStatus();
   } else {
     $('load-status').innerHTML = '<span class="bad">Load the card again to power on.</span>';
@@ -547,7 +574,7 @@ function onShutdown(files) {
   $('st-audio').textContent = '–';
   $('power').textContent = 'Power on';
   $('power').disabled = !vfs;
-  $('game').disabled = false;
+  $('game').disabled = $('language').disabled = false;
   updateWakeLock();
   log('powered off');
 }
@@ -596,6 +623,7 @@ function addSound(path, t) {
   const name = path.split('/').pop();
   const li = document.createElement('li');
   const al = aliases.get(name.toLowerCase());
+  li.title = path;
   li.innerHTML = `${formatTime(t)} ${name}${al ? ` <span class="alias">${al.join(', ')}</span>` : ''}`;
   const list = $('sounds');
   list.prepend(li);

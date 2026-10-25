@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 // Headless runner for the emulator core (yvio-emulator/*).
-//   node test/run.js [--card DIR]... [--app PATH] [--trace] [--quiet-time] [--until-wav] [--ms N] [--wav OUT] [--slice N] [--display] [--press MS:KEY[:HOLD],...]
+//   node test/run.js [--card DIR]... [--app PATH] [--language CODE] [--trace] [--quiet-time] [--until-wav] [--ms N] [--wav OUT] [--slice N] [--display] [--press MS:KEY[:HOLD],...]
 //   node test/run.js test/scripts/GAME/NAME.json [options]   run a test script (see test/scripts/README.md); exit 1 on failure
 // --card may repeat; later cards override files of earlier ones. Without --card it uses cards/freibeuter-der-karibik/original
 // (cards/ is git-ignored: put or link your own SD-card copies there as cards/GAME/VERSION/;
-// YVIO_CARDS sets another folder).
+// YVIO_CARDS sets another folder). --language selects a language of the game's lang.txt
+// (e.g. "en" on Freibeuter der Karibik 1.1), as the page's Language choice does.
 
 import { performance } from 'node:perf_hooks';
 import { vfsFromDirs } from './node-files.js';
@@ -14,11 +15,12 @@ import { createCpu } from '../yvio-emulator/cpu.js';
 import { toAscii } from '../yvio-emulator/display.js';
 
 const args = process.argv.slice(2);
-const opt = { cards: [], app: 'pirates/app.elf', trace: false, quietTime: false, untilWav: false, ms: 10000, wav: null, slice: undefined, display: false, presses: [], files: false };
+const opt = { cards: [], app: 'pirates/app.elf', trace: false, quietTime: false, untilWav: false, ms: 10000, wav: null, slice: undefined, display: false, presses: [], files: false, language: null };
 for (let i = 0; i < args.length; i++) {
   const a = args[i];
   if (a === '--card') opt.cards.push(args[++i]);
   else if (a === '--app') opt.app = args[++i];
+  else if (a === '--language') opt.language = args[++i];
   else if (a === '--trace') opt.trace = true;
   else if (a === '--quiet-time') opt.quietTime = true;
   else if (a === '--until-wav') opt.untilWav = true;
@@ -36,6 +38,7 @@ const script = opt.script;
 if (script) {
   if (!opt.cards.length) for (const c of script.cards ?? ['freibeuter-der-karibik/original']) opt.cards.push(cardsDir + c);
   if (script.app) opt.app = script.app;
+  if (script.language) opt.language ??= script.language;
   opt.ms = script.timeoutMs ?? 120000;
   opt.files = opt.files || !!script.verbose;
   console.log(`script: ${script.description ?? '(no description)'}`);
@@ -46,6 +49,14 @@ const t0 = performance.now();
 const cpu = await createCpu('unicorn');
 const tCpu = performance.now() - t0;
 const vfs = vfsFromDirs(...opt.cards);
+if (opt.language) {
+  const game = opt.app.split('/').slice(0, -1).join('/');
+  if (!vfs.setLanguage(game, opt.language)) {
+    const langs = vfs.languages(game);
+    console.error(`${game} has no language "${opt.language}" (lang.txt: ${langs ? langs.languages.map(l => l.code).join(', ') : 'none'})`);
+    process.exit(2);
+  }
+}
 const NOISY = new Set(['os_get_time_ms']);
 let wavHit = null;
 const recent = [];

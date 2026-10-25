@@ -3,7 +3,8 @@
 //   node test/files.js
 // - rerootAtCard() finds the card root (the folder with system/) below extra folders
 // - games() lists the game folders: root folders with an app.elf, not the console's own
-import { Vfs } from '../yvio-emulator/files.js';
+// - readLanguages()/setLanguage() read and select the languages of a game's lang.txt
+import { Vfs, readLanguages, withLanguage } from '../yvio-emulator/files.js';
 
 let ok = true;
 const check = (cond, what) => { console.log(`${cond ? 'ok  ' : 'FAIL'} ${what}`); ok &&= !!cond; };
@@ -36,6 +37,25 @@ check(v.games().length === 0, 'no game folder: none');
 
 v = card(['sdcard/pirates/app.elf', 'sdcard/pirates/files_de.txt']);
 check(same(v.games(), ['pirates']), 'no system/ folder: the common folder is stripped');
+
+// lang.txt: count, selected, then (length, name, 2-letter code) per language
+const lang = (count, selected, ...entries) => new Uint8Array([count, selected,
+  ...entries.flatMap(([name, code]) => [name.length, ...[...name + code].map(c => c.charCodeAt(0))])]);
+const two = lang(2, 0, ['deutsch', 'de'], ['english', 'en']);
+let l = readLanguages(two);
+check(l && l.selected === 0 && same(l.languages, [{ name: 'deutsch', code: 'de' }, { name: 'english', code: 'en' }]), 'lang.txt: two languages');
+check(readLanguages(withLanguage(two, 1))?.selected === 1 && two[1] === 0, 'withLanguage: selects a copy');
+check(readLanguages(null) === null && readLanguages(new Uint8Array([0, 0])) === null, 'lang.txt missing or empty: null');
+l = readLanguages(two.subarray(0, two.length - 1));
+check(same(l?.languages.map(x => x.code), ['de']), 'lang.txt cut short: the whole entries');
+check(readLanguages(lang(2, 5, ['deutsch', 'de'], ['english', 'en']))?.selected === 0, 'lang.txt: selected out of range -> 0');
+
+v = card([...CONSOLE, 'pirates/app.elf']);
+v.add('Pirates/Lang.txt', two);
+check(v.setLanguage('pirates', 'EN') && v.languages('pirates').selected === 1 && v.has('Pirates/Lang.txt')
+  && [...v.files.values()].some(f => f.path === 'Pirates/Lang.txt'), 'setLanguage: writes byte 1, keeps the path');
+check(!v.setLanguage('pirates', 'fr') && v.languages('pirates').selected === 1, 'setLanguage: unknown code is refused');
+check(!card([...CONSOLE, 'pirates/app.elf']).setLanguage('pirates', 'de'), 'setLanguage: no lang.txt');
 
 console.log(ok ? 'files: all ok' : 'files: FAILED');
 process.exit(ok ? 0 : 1);

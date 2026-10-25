@@ -114,6 +114,24 @@ export class Vfs {
       .sort((a, b) => a.localeCompare(b));
   }
 
+  /** The languages of a game folder (from GAME/lang.txt, see readLanguages), or null. */
+  languages(game) {
+    return readLanguages(this.get(`${game}/lang.txt`));
+  }
+
+  /**
+   * Select a language for the next boot: writes its index into GAME/lang.txt.
+   * @returns {boolean} false if the game has no such language
+   */
+  setLanguage(game, code) {
+    const langs = this.languages(game);
+    const i = langs?.languages.findIndex(l => l.code.toLowerCase() === String(code).toLowerCase()) ?? -1;
+    if (i < 0) return false;
+    const path = this.files.get(normPath(`${game}/lang.txt`).toLowerCase()).path;
+    this.add(path, withLanguage(this.get(path), i));
+    return true;
+  }
+
   /**
    * Build from a browser FileList (input webkitdirectory or drag and drop), using webkitRelativePath.
    * @param {Iterable<File>} fileList
@@ -138,6 +156,36 @@ export class Vfs {
     vfs.rerootAtCard();
     return vfs;
   }
+}
+
+/**
+ * Parse a game's lang.txt: u8 count, u8 selected index, then per language u8 length, the name
+ * (e.g. "english") and a 2-letter code ("en"). The game builds texts_??.txt, files_??.txt,
+ * menu/??_menu.txt and sounds/??/ from the selected code; without the file it uses German. Its own
+ * menu offers the choice only with 2 or more languages and saves it by writing byte 1.
+ * @param {Uint8Array|null} bytes
+ * @returns {{selected:number, languages:{name:string, code:string}[]} | null}  null if missing or empty
+ */
+export function readLanguages(bytes) {
+  if (!bytes || bytes.length < 2) return null;
+  const dec = new TextDecoder('latin1');
+  const languages = [];
+  // like the game: stop at the first entry that is cut short
+  for (let i = 0, p = 2; i < bytes[0]; i++) {
+    const len = bytes[p];
+    if (len === undefined || p + 1 + len + 2 > bytes.length) break;
+    languages.push({ name: dec.decode(bytes.subarray(p + 1, p + 1 + len)), code: dec.decode(bytes.subarray(p + 1 + len, p + 3 + len)) });
+    p += 3 + len;
+  }
+  if (!languages.length) return null;
+  return { selected: bytes[1] < languages.length ? bytes[1] : 0, languages };
+}
+
+/** A copy of lang.txt with language `index` selected. */
+export function withLanguage(bytes, index) {
+  const out = bytes.slice();
+  out[1] = index;
+  return out;
 }
 
 /** Parse the central directory of a zip file. */

@@ -1,0 +1,24 @@
+{
+  "description": "Version 1.1, language en: boot, skip the intro (key 7), confirm the welcome (key 6), choose 5/5 -> game mode Normal",
+  "cards": ["freibeuter-der-karibik/original-v1.1"],
+  "language": "en",
+  "timeoutMs": 120000,
+  "steps": [
+    { "afterFile": "sounds/intro\\.wav$", "delay": 2000, "key": 7 },
+    { "afterFile": "en/p0445\\.wav$", "delay": 4000, "key": 6 },
+    { "afterFile": "en/p0719\\.wav$", "delay": 2000, "key": 5 },
+    { "afterFile": "en/p0720\\.wav$", "delay": 2000, "key": 5 }
+  ],
+  "expectFiles": [
+    "pirates/lang\\.txt$",
+    "pirates/texts_en\\.txt$",
+    "pirates/files_en\\.txt$",
+    "pirates/sounds/intro\\.wav$",
+    "system/key_down\\.wav$",
+    "en/p0231\\.wav$",
+    "en/p0445\\.wav$",
+    "en/p0719\\.wav$",
+    "en/p0720\\.wav$",
+    "en/p0809\\.wav$"
+  ]
+}

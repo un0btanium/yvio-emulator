@@ -1,10 +1,15 @@
 # Freibeuter der Karibik
 
-Card: `cards/freibeuter-der-karibik/original` (an `emulator/` folder in it doesn't matter here).
+Cards: `cards/freibeuter-der-karibik/original` (version 1.0, German only) and
+`cards/freibeuter-der-karibik/original-v1.1` (version 1.1, German and English). An `emulator/`
+folder in them doesn't matter here.
 
 - `mode_choice.json`: boot, skip the intro, confirm the welcome, choose game mode Normal.
 - `join_two_players.json`: the same, then the blue ship joins on Grain and the green one on Rum,
   and the game announces two players.
+- `v1.1_language_de.json`, `v1.1_language_en.json`: `mode_choice` on version 1.1, with the card's
+  default language (de) and with `"language": "en"`; the game then reads `texts_en.txt`,
+  `files_en.txt` and plays `sounds/en/`.
 - `goods_not_here.json`: one player (blue on Grain) starts on antenna 4, skips through the
   equipment prompts, then puts the ship on Tobacco, which that port doesn't take; the game
   says so twice. Keys are pressed 0.5 s into each prompt, which cuts the speech short, as a
