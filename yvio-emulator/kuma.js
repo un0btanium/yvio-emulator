@@ -10,6 +10,12 @@ const EINVAL = 0xffffffea | 0; // -22, used by the file/audio calls
 const FILE_SLOTS = 16, FILE_SIZE = 0x50, DIR_SLOTS = 4, DIR_SIZE = 0x34;
 const AUDIO_MAGIC = 0x5622;
 const RAND_A = 0x41c64e6d, RAND_C = 0x3039;
+// RFID calls take time on the real console, and the game polls the board in loops without
+// sleeping (e.g. while a "wrong goods field" prompt plays). Instant calls would make such a loop
+// burn host CPU for almost no virtual time, so the emulator falls behind and the audio stutters.
+// OS.elf sys34_rfid_select_antenna sleeps 1 tick (1 ms); a 1-slot ISO 15693 inventory is about
+// 2 ms of request and timeout, plus about 4 ms for each tag's 12-byte reply at 26 kbit/s.
+const RFID_SELECT_MS = 1, RFID_INVENTORY_MS = 2, RFID_TAG_MS = 4;
 
 /** Convert a host file name to the FAT 8.3 form the OS returns from readdir ("NAME.EXT"). */
 function shortName(name) {
@@ -185,8 +191,14 @@ export class Kuma {
       // RFID: the virtual board (board.js)
       rfid_init() { return 0; },
       rfid_close() {},
-      rfid_select_antenna(n) { return k.board.selectAntenna(n | 0); },
-      rfid_inventory(tags, max, flags, px) { return k.board.inventory(cpu, tags, max, flags, px); },
+      rfid_select_antenna(n) {
+        const r = k.board.selectAntenna(n | 0);
+        return r < 0 ? r : k.busy(RFID_SELECT_MS, r);
+      },
+      rfid_inventory(tags, max, flags, px) {
+        const n = k.board.inventory(cpu, tags, max, flags, px);
+        return k.busy(RFID_INVENTORY_MS + RFID_TAG_MS * Math.max(n, 0), n);
+      },
       rfid_read_block(dest, tag, block) { return k.board.readBlock(cpu, dest, tag, block & 0xff); },
       rfid_write_block(tag, src, block, len) { return k.board.writeBlock(cpu, tag, src, block & 0xff, len); },
       rfid_uid_compare(a, b) { return Board.uidCompare(cpu, a, b); },
@@ -210,6 +222,11 @@ export class Kuma {
     };
     const all = { ...os, ...tn };
     return SYSCALLS.map(s => all[s.name] ?? null);
+  }
+
+  /** Block the calling task for `ms` of virtual time (a busy device), then return `r0`. */
+  busy(ms, r0) {
+    return this.kernel.block({ kind: 'busy', onTimeout: t => { t.ctx[0] = r0 >>> 0; } }, ms);
   }
 
   exit(kind, path = '', arg = '') {
