@@ -48,7 +48,7 @@ Feel free to reach out if you are having issues or can confirm that other games 
 
 ## Supported Languages
 
-A game with more than one language in its `lang.txt` will let you select one under **Console → Language** (this will be hidden if there is just one language).
+A game with more than one language in its `lang.txt` will let you select one under **Console → Language** (this will be hidden if there is just one language). When booting from the console menu, the Game and Language choices are hidden: the menu lets you choose the game and its own language, and the games' menus their language.
 Technical note: This choice is written into the card copy's `lang.txt` (as the game's own menu does) and will be loaded on the next load already preselected.
 
 The emulator UI itself currently only comes in English. German might be supported in the future, if needed we recommend using the browser translation in the meantime.

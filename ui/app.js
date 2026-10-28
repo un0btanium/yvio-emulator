@@ -201,10 +201,16 @@ function viewSelect(id, prefix) {
 viewSelect('view-areas', 'areas');
 viewSelect('view-figures', 'figures'); // plain coloured circles or ship drawings
 // Boot from the game, or from the console menu (the card's root app.elf), which then starts a
-// game with os_exec as on the console. Applies at the next Power on.
+// game with os_exec as on the console. Applies at the next Power on. The menu chooses the game and
+// its own and the games' menus the languages, so the Game and Language choices are hidden then.
 $('boot-from').value = store.get('boot-from') ?? defaultOf('boot-from');
 if (!$('boot-from').value) $('boot-from').value = defaultOf('boot-from');
-$('boot-from').addEventListener('change', () => store.set('boot-from', $('boot-from').value));
+$('boot-from').addEventListener('change', () => {
+  store.set('boot-from', $('boot-from').value);
+  if (vfs) showGames(vfs.games());
+});
+/** Booting the console menu: chosen, and the card has one. */
+const menuBoot = () => $('boot-from').value === 'menu' && !!vfs?.has('app.elf');
 function setUnused() {
   board.showUnused($('view-unused').checked);
   store.set('view-unused', $('view-unused').checked);
@@ -346,7 +352,7 @@ function showGames(games) {
   sel.replaceChildren(...games.map(g => new Option(g, g)));
   const last = store.get('game');
   sel.value = games.includes(last) ? last : games[0];
-  $('game-row').hidden = games.length < 2;
+  $('game-row').hidden = games.length < 2 || menuBoot();
   useGame(sel.value);
 }
 function useGame(name) {
@@ -360,21 +366,30 @@ $('game').addEventListener('change', e => {
 
 // The game's languages (GAME/lang.txt, e.g. "de" and "en" on Freibeuter der Karibik 1.1). With
 // more than one the Console section shows a choice, remembered in the browser; it is written into
-// the card's lang.txt (as the game's own menu does) and applies at the next Power on.
+// the card's lang.txt (as the game's own menu does) and applies at the next Power on. When booting
+// the console menu the card's own choice stays.
 /** @param {string} [want]  the language code to select if the game has it, else the card's own choice */
 function showLanguages(want) {
   const langs = vfs?.languages(game);
   const sel = /** @type {HTMLSelectElement} */ ($('language'));
   sel.replaceChildren(...(langs?.languages ?? []).map(l => new Option(`${l.name} (${l.code})`, l.code)));
-  $('language-row').hidden = (langs?.languages.length ?? 0) < 2;
+  $('language-row').hidden = (langs?.languages.length ?? 0) < 2 || menuBoot();
   if (!langs) return useLanguage('de');
   const codes = langs.languages.map(l => l.code);
-  sel.value = codes.includes(want) ? want : codes[langs.selected];
+  sel.value = codes.includes(want) && !menuBoot() ? want : codes[langs.selected];
   useLanguage(sel.value);
 }
 function useLanguage(code) {
   vfs?.setLanguage(game, code);
-  readAliases(vfs?.get(`${game}/files_${code}.txt`) ?? new Uint8Array());
+  readAliases(aliasFile(game, code));
+}
+/** GAME/files_CODE.txt (the sound aliases), CODE = the card's choice in GAME/lang.txt by default. */
+function aliasFile(name, code = cardLanguage(name)) {
+  return vfs?.get(`${name}/files_${code}.txt`) ?? new Uint8Array();
+}
+function cardLanguage(name) {
+  const langs = vfs?.languages(name);
+  return langs ? langs.languages[langs.selected].code : 'de';
 }
 $('language').addEventListener('change', e => {
   store.set('language', e.target.value);
@@ -522,6 +537,11 @@ async function powerOn() {
   worker = new Worker(new URL('../yvio-emulator/worker.js', import.meta.url), { type: 'module' });
   worker.onmessage = onWorkerMessage;
   worker.onerror = e => log(`worker error: ${e.message}`);
+  let appPath = `${game}/app.elf`;
+  if (menuBoot()) appPath = 'app.elf';
+  else if ($('boot-from').value === 'menu') log('no console menu (app.elf) on the card: starting the game');
+  // the sound aliases of every game, for the one the console menu starts (copies: tiny files)
+  menuAliases = new Map(vfs.games().map(g => [g.toLowerCase(), aliasFile(g).slice()]));
   const files = [], transfer = [];
   for (const f of vfs.files.values()) {
     const data = f.data.byteOffset === 0 && f.data.byteLength === f.data.buffer.byteLength ? f.data : f.data.slice();
@@ -529,11 +549,6 @@ async function powerOn() {
     transfer.push(data.buffer);
   }
   if (audioPort) transfer.push(audioPort);
-  let appPath = `${game}/app.elf`;
-  if ($('boot-from').value === 'menu') {
-    if (vfs.has('app.elf')) appPath = 'app.elf';
-    else log('no console menu (app.elf) on the card: starting the game');
-  }
   worker.postMessage({ type: 'boot', files, appPath, audioPort, placements: board.placements() }, transfer);
   vfs = null; // the buffers now belong to the worker; power off hands them back
 
@@ -572,7 +587,7 @@ function onShutdown(files) {
     // the game's own menu may have changed the language: follow the card
     const langs = vfs.languages(game);
     if (langs && langs.languages.length > 1) store.set('language', langs.languages[langs.selected].code);
-    showLanguages(store.get('language'));
+    showGames(vfs.games()); // the console menu may have started another game
     showLoadStatus();
   } else {
     $('load-status').innerHTML = '<span class="bad">Load the card again to power on.</span>';
@@ -622,12 +637,15 @@ function followApp(app) {
   if (menu || !app) return;
   log(`the console menu started ${app}`);
   const folder = app.split('/').slice(0, -1).join('/').toLowerCase();
+  readAliases(menuAliases.get(folder) ?? new Uint8Array());
   const pick = [...$('game').options].find(o => o.value.toLowerCase() === folder);
   if (pick && pick.value !== game) {
     $('game').value = game = pick.value;
     store.set('game', game);
   }
 }
+/** @type {Map<string, Uint8Array>} lower-case game folder -> its files_CODE.txt, kept at Power on */
+let menuAliases = new Map();
 
 // ---- worker messages ---------------------------------------------------------------------
 function onWorkerMessage({ data }) {

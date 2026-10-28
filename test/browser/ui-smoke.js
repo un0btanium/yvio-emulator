@@ -14,7 +14,8 @@
 // With --settings FILE it loads FILE through Settings → Load…, checks the figures, console size and
 // antenna ids on the page, then presses Save (download into FILE's folder) and compares the saved
 // file with FILE. The browser must be able to write there. If FILE sets Console → Boot from to
-// "Console menu", it also checks that the menu boots and starts the game.
+// "Console menu", it also checks that the menu boots and starts the game, and that the Game and
+// Language choices are hidden (--language is then ignored).
 // The browser must be able to read ZIP (for flatpak: flatpak run --filesystem=DIR:ro ...).
 import { writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -115,7 +116,10 @@ check(await fields() === 0, 'Clear All empties the board');
 await ev("document.getElementById('antennas-edit-cancel').click(), 1");
 check(await fields() === before0 && await ev("document.getElementById('antennas-edit-clear').hidden"), 'Cancel restores the layout and hides Clear All');
 // language: shown only for a game with two or more languages in its lang.txt
-const language = opt('--language');
+const menuBoot = await ev("document.getElementById('boot-from').value") === 'menu';
+// booting the console menu: it chooses game and language itself, so the page hides both choices
+if (menuBoot) check(await ev("document.getElementById('game-row').hidden && document.getElementById('language-row').hidden"), 'console menu boot: Game and Language choices hidden');
+const language = menuBoot ? null : opt('--language');
 const languages = await ev("[...document.getElementById('language').options].map(o => o.value).join(',')");
 if (language) {
   check(!await ev("document.getElementById('language-row').hidden") && languages.split(',').includes(language), `language choice offers ${language} (${languages})`);
@@ -123,7 +127,7 @@ if (language) {
 } else console.log(`     language choice: ${await ev("document.getElementById('language-row').hidden") ? 'hidden' : 'shown'} (${languages || 'no lang.txt'})`);
 const fromLanguage = () => (language ? ev(`[...document.querySelectorAll('#sounds li')].filter(l => /p\\d{4}\\.wav/.test(l.textContent)).every(l => l.title.includes('/${language}/'))`) : true);
 await ev("document.getElementById('power').click(), 1");
-if (await ev("document.getElementById('boot-from').value") === 'menu') {
+if (menuBoot) {
   // the console menu: boot animation with ticks and the OS keys, then it starts the game itself
   check(await waitFor("[...document.querySelectorAll('#sounds li')].some(l => /key_down\\.wav/.test(l.textContent))"
     + " && !document.getElementById('os-keys').hidden", 10000), 'console menu boots (key_down.wav), OS keys shown');
