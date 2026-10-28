@@ -189,10 +189,19 @@ await ev("document.getElementById('settings').hidden && document.getElementById(
 await sleep(300);
 await ev("(c => { if (!c.checked) { c.checked = true; c.dispatchEvent(new Event('change')); } return 1; })(document.getElementById('view-os-keys'))");
 const vol0 = Number(await ev("document.getElementById('volume').value"));
-const volWant = Math.round((Math.round(vol0 * 255 / 100) + 4) * 100 / 255);
+// the game steps by 4 of 255, the emulator widens that to 16
+const volWant = Math.round(Math.min(255, Math.round(vol0 * 255 / 100) + 16) * 100 / 255);
+const clicks = () => ev("[...document.querySelectorAll('#sounds li')].filter(l => /key_down\\.wav/.test(l.textContent)).length");
+const clicks0 = await clicks();
 await key(14);
 check(await waitFor(`Number(document.getElementById('volume').value) === ${volWant}`, 5000),
   `key 14 (volume +) moves the Audio volume slider ${vol0} -> ${volWant} (now ${await ev("document.getElementById('volume').value")})`);
+check(await waitFor(`[...document.querySelectorAll('#sounds li')].filter(l => /key_down\\.wav/.test(l.textContent)).length > ${clicks0}`, 5000),
+  'the game clicks key_down.wav after the change');
+await sleep(500);
+await key(13);
+check(await waitFor(`Number(document.getElementById('volume').value) === ${vol0}`, 5000),
+  `key 13 (volume −) moves it back to ${vol0} (now ${await ev("document.getElementById('volume').value")})`);
 const intros = () => ev("[...document.querySelectorAll('#sounds li')].filter(l => /intro\\.wav/.test(l.textContent)).length");
 const before = await intros();
 await ev("document.getElementById('power').click(), 1");

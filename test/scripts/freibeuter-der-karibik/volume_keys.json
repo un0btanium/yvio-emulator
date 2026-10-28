@@ -1,14 +1,14 @@
 {
-  "description": "Saved console volume 204 (the page's 80 %): the game keeps it; during the intro key 14 (volume +) twice and key 13 (volume −) once, 4 steps each -> 208",
+  "description": "Saved console volume 204 (the page's 80 %): the game keeps it; during the intro key 14 (volume +) twice and key 13 (volume −) once; the game steps by 4, the emulator widens that to 16 -> 220; after each change the game clicks system/key_down.wav",
   "cards": ["freibeuter-der-karibik/original"],
   "volume": 204,
   "timeoutMs": 20000,
   "steps": [
     { "afterFile": "sounds/intro\\.wav$", "delay": 1000, "key": 14 },
-    { "delay": 1000, "key": 14 },
-    { "delay": 1000, "key": 13 },
-    { "delay": 1000 }
+    { "afterFile": "^system/key_down\\.wav$", "delay": 1000, "key": 14 },
+    { "afterFile": "^system/key_down\\.wav$", "delay": 1000, "key": 13 },
+    { "afterFile": "^system/key_down\\.wav$" }
   ],
-  "expectFiles": ["^pirates/sounds/intro\\.wav$"],
-  "expectVolume": 208
+  "expectFiles": ["^pirates/sounds/intro\\.wav$", "^system/key_down\\.wav$", "^system/key_down\\.wav$", "^system/key_down\\.wav$"],
+  "expectVolume": 220
 }

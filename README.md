@@ -43,8 +43,6 @@ By default, this emulator boots directly into the game instead of the console me
 `app.elf`), just like the real console does: it plays its boot animation and then
 starts the game itself. For this purpose the console's OS keys are shown while the menu runs; it lets you choose between different languages and games first if there are more than one (select with the Volume buttons, confirm with the Menu button). The menu text will be in German unless the card has its own `lang.txt` at the root.
 
-The console's **Vol −/+** keys (shown under **Settings → Console → Show OS keys**, and always while the console menu runs) change the volume as on the console, in steps of 4 of 255, and **Settings → Console → Audio volume** follows them; moving the slider sets the console volume too. The page plays the sound at the slider's percentage (the real console attenuates in coarser 6 dB steps).
-
 Feel free to reach out if you are having issues or can confirm that other games also work correctly.
 
 
@@ -211,7 +209,7 @@ python3 -m http.server 8000     # then open http://localhost:8000/
   at 60 % opacity. The "Console Overlay" settings set the opacity and rotates (90° steps and fine), zooms, stretches
   and moves it, and resizes the LED display to fit the sheet's display window; the adjustment is remembered per picture name. The alignment of the local photo
   is `OVERLAY_DEFAULT` in `ui/console-ui.js`.
-
+- The console's **Vol −/+** keys (shown under **Settings → Console → Show OS keys**, and always while the console menu runs) change the volume in steps of 16 of 255 (about 6 %; the console itself uses 4, which would be too small to hear here), with the game's click (`system/key_down.wav`) after each change, and **Settings → Console → Audio volume** follows them; moving the slider sets the console volume too. The page plays the sound at the slider's percentage (the real console attenuates in coarser 6 dB steps).
 
 ## Tests (Node ≥ 18)
 The tests run the real game, so they need an SD-card copy in `cards/` (git-ignored), one folder

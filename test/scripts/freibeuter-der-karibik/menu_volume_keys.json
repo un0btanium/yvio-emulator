@@ -1,5 +1,5 @@
 {
-  "description": "Console menu, saved volume 204: keys 14, 14, 13 during its boot animation change the volume (later they move the game selection); the volume carries over into the game it starts -> 208",
+  "description": "Console menu, saved volume 204: keys 14, 14, 13 during its boot animation change the volume (later they move the game selection); the volume carries over into the game it starts -> 220 (steps widened to 16)",
   "cards": ["freibeuter-der-karibik/original"],
   "app": "app.elf",
   "volume": 204,
@@ -14,5 +14,5 @@
     "^menu/de_menu\\.txt$",
     "^pirates/sounds/intro\\.wav$"
   ],
-  "expectVolume": 208
+  "expectVolume": 220
 }

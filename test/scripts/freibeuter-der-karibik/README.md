@@ -28,12 +28,14 @@ folder in them doesn't matter here.
     menu writes byte 1 of the root `lang.txt` (opened with mode "a", then fseek 1) and reads
     `menu/en_menu.txt`.
   With only one game (the other cards) the menu starts it about 1 s after reading its `info.txt`.
-- Volume (keys 13 −, 14 +, ±4 of 0..255; `audio_get_param(0)` / `audio_set_volume(0, v)`):
+- Volume (keys 13 −, 14 +: the apps step by ±4 of 0..255, `audio_set_volume(0, audio_get_param(0) ± 4)`;
+  the emulator's OS widens a ±4 step to ±16):
   - `volume_default.json`: no saved volume (0): the game sets 200 at its first sound.
-  - `volume_keys.json`: saved 204; 14, 14, 13 during the intro → 208.
+  - `volume_keys.json`: saved 204; 14, 14, 13 during the intro → 220, each change followed by the
+    game's `system/key_down.wav` click.
   - `menu_volume_keys.json`: the console menu changes the volume with 13/14 during its boot
     animation (in the game selection they move the selection instead); it carries over into the
-    game the menu starts (204 → 208).
+    game the menu starts (204 → 220).
 - `goods_not_here.json`: one player (blue on Grain) starts on antenna 4, skips through the
   equipment prompts, then puts the ship on Tobacco, which that port doesn't take; the game
   says so twice. Keys are pressed 0.5 s into each prompt, which cuts the speech short, as a

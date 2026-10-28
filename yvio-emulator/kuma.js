@@ -10,6 +10,10 @@ const EINVAL = 0xffffffea | 0; // -22, used by the file/audio calls
 const FILE_SLOTS = 16, FILE_SIZE = 0x50, DIR_SLOTS = 4, DIR_SIZE = 0x34;
 const AUDIO_MAGIC = 0x5622;
 const RAND_A = 0x41c64e6d, RAND_C = 0x3039;
+// The menu and the games change the volume by ±4 of 255 per Vol −/+ key press
+// (audio_set_volume(0, audio_get_param(0) ± 4)). On the page's linear volume that is about 1.5 %
+// and can't be heard, so the emulator's OS widens such a step to ±16 (about 6 %).
+const VOLUME_APP_STEP = 4, VOLUME_KEY_STEP = 16;
 // RFID calls take time on the real console, and the game polls the board in loops without
 // sleeping (e.g. while a "wrong goods field" prompt plays). Instant calls would make such a loop
 // burn host CPU for almost no virtual time, so the emulator falls behind and the audio stutters.
@@ -228,8 +232,10 @@ export class Kuma {
       },
       // 0 = both channels, 1 = left, 2 = right, 3 = amplifier setting, 4 = on/off (ignored here)
       audio_set_volume(ch, v) {
-        v = Math.max(0, Math.min(255, v | 0));
         const vol = k.volume;
+        v |= 0;
+        if (ch === 0 && Math.abs(v - vol.saved) === VOLUME_APP_STEP) v = vol.saved + Math.sign(v - vol.saved) * VOLUME_KEY_STEP;
+        v = Math.max(0, Math.min(255, v));
         if (ch === 0 || ch === 1) vol.left = v;
         if (ch === 0 || ch === 2) vol.right = v;
         if (ch === 3) vol.ch3 = v;
