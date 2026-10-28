@@ -13,7 +13,8 @@
 // checks that the announcements come from sounds/CODE/ (also after the power off → on cycle).
 // With --settings FILE it loads FILE through Settings → Load…, checks the figures, console size and
 // antenna ids on the page, then presses Save (download into FILE's folder) and compares the saved
-// file with FILE. The browser must be able to write there.
+// file with FILE. The browser must be able to write there. If FILE sets Console → Boot from to
+// "Console menu", it also checks that the menu boots and starts the game.
 // The browser must be able to read ZIP (for flatpak: flatpak run --filesystem=DIR:ro ...).
 import { writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -122,6 +123,13 @@ if (language) {
 } else console.log(`     language choice: ${await ev("document.getElementById('language-row').hidden") ? 'hidden' : 'shown'} (${languages || 'no lang.txt'})`);
 const fromLanguage = () => (language ? ev(`[...document.querySelectorAll('#sounds li')].filter(l => /p\\d{4}\\.wav/.test(l.textContent)).every(l => l.title.includes('/${language}/'))`) : true);
 await ev("document.getElementById('power').click(), 1");
+if (await ev("document.getElementById('boot-from').value") === 'menu') {
+  // the console menu: boot animation with ticks and the OS keys, then it starts the game itself
+  check(await waitFor("[...document.querySelectorAll('#sounds li')].some(l => /key_down\\.wav/.test(l.textContent))"
+    + " && !document.getElementById('os-keys').hidden", 10000), 'console menu boots (key_down.wav), OS keys shown');
+  check(await waitFor("document.getElementById('log').textContent.includes('the console menu started')"), 'the console menu starts the game');
+  check(await waitFor("document.getElementById('os-keys').hidden === !document.getElementById('view-os-keys').checked"), 'OS keys as set once the game runs');
+}
 check(await waitFor("[...document.querySelectorAll('#sounds li')].some(l => /intro\\.wav/.test(l.textContent))"), 'intro.wav plays');
 check(await ev("document.getElementById('language').disabled"), 'language choice locked while powered on');
 check(await waitFor("document.getElementById('load-status').textContent === 'Playing…'", 5000) && !await ev("document.getElementById('settings').hidden"), 'status: Playing… (no load info), settings stay open');

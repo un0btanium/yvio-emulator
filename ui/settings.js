@@ -14,9 +14,10 @@
 /** @type {Setting[]} in the order of the UI */
 export const SETTINGS = [
   { section: 'Figures', label: 'Show as', key: 'view-figures', type: 'choice', options: { basic: 'Basic', ships: 'Ships' }, default: 'basic' },
+  { section: 'Console', label: 'Boot from', key: 'boot-from', type: 'choice', options: { game: 'Game', menu: 'Console menu' }, default: 'game' },
   { section: 'Console', label: 'Audio volume', key: 'volume', type: 'number', min: 0, max: 100, default: 80 },
   { section: 'Console', label: 'Console size', key: 'console-size', type: 'number', min: 25, max: 45, default: 33 },
-  { section: 'Console', label: 'Show unused OS keys', key: 'view-os-keys', type: 'bool', default: false },
+  { section: 'Console', label: 'Show OS keys', key: 'view-os-keys', type: 'bool', default: false },
   { section: 'Console Overlay', label: 'Opacity', key: 'overlay-opacity', type: 'number', min: 0, max: 100, default: 60 },
   { section: 'Console Overlay', label: 'Rotate 90°', key: 'overlay-rot', type: 'number', values: [0, 90, 180, 270], default: 0 },
   { section: 'Console Overlay', label: 'Rotate', key: 'overlay-tilt', type: 'number', min: -20, max: 20, default: 0 },

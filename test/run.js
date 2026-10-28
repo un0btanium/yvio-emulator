@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 // Headless runner for the emulator core (yvio-emulator/*).
-//   node test/run.js [--card DIR]... [--app PATH] [--language CODE] [--trace] [--quiet-time] [--until-wav] [--ms N] [--wav OUT] [--slice N] [--display] [--press MS:KEY[:HOLD],...]
+//   node test/run.js [--card DIR]... [--app PATH] [--language CODE] [--trace] [--quiet-time] [--until-wav] [--ms N] [--wav OUT] [--slice N] [--display] [--press MS:KEY[:HOLD],...] [--follow-exec]
 //   node test/run.js test/scripts/GAME/NAME.json [options]   run a test script (see test/scripts/README.md); exit 1 on failure
 // --card may repeat; later cards override files of earlier ones. Without --card it uses cards/freibeuter-der-karibik/original
 // (cards/ is git-ignored: put or link your own SD-card copies there as cards/GAME/VERSION/;
 // YVIO_CARDS sets another folder). --language selects a language of the game's lang.txt
 // (e.g. "en" on Freibeuter der Karibik 1.1), as the page's Language choice does.
+// --follow-exec (script: "followExec": true) reboots into the app an os_exec names, as the page
+// does (e.g. the console menu app.elf starting PIRATES/app.elf); times then run on across reboots.
 
 import { performance } from 'node:perf_hooks';
 import { vfsFromDirs } from './node-files.js';
@@ -15,7 +17,7 @@ import { createCpu } from '../yvio-emulator/cpu.js';
 import { toAscii } from '../yvio-emulator/display.js';
 
 const args = process.argv.slice(2);
-const opt = { cards: [], app: 'pirates/app.elf', trace: false, quietTime: false, untilWav: false, ms: 10000, wav: null, slice: undefined, display: false, presses: [], files: false, language: null };
+const opt = { cards: [], app: 'pirates/app.elf', trace: false, quietTime: false, untilWav: false, ms: 10000, wav: null, slice: undefined, display: false, presses: [], files: false, language: null, followExec: false };
 for (let i = 0; i < args.length; i++) {
   const a = args[i];
   if (a === '--card') opt.cards.push(args[++i]);
@@ -29,6 +31,7 @@ for (let i = 0; i < args.length; i++) {
   else if (a === '--slice') opt.slice = Number(args[++i]);
   else if (a === '--display') opt.display = true;
   else if (a === '--files') opt.files = true;
+  else if (a === '--follow-exec') opt.followExec = true;
   else if (a === '--press') opt.presses = args[++i].split(',').map(p => { const [at, key, hold = 150] = p.split(':').map(Number); return { at, key, hold }; });
   else if (!a.startsWith('--') && a.endsWith('.json')) opt.script = JSON.parse(readFileSync(a, 'utf8'));
   else { console.error(`unknown option ${a}`); process.exit(2); }
@@ -39,6 +42,7 @@ if (script) {
   if (!opt.cards.length) for (const c of script.cards ?? ['freibeuter-der-karibik/original']) opt.cards.push(cardsDir + c);
   if (script.app) opt.app = script.app;
   if (script.language) opt.language ??= script.language;
+  if (script.followExec) opt.followExec = true;
   opt.ms = script.timeoutMs ?? 120000;
   opt.files = opt.files || !!script.verbose;
   console.log(`script: ${script.description ?? '(no description)'}`);
@@ -46,7 +50,7 @@ if (script) {
 if (!opt.cards.length) opt.cards.push(cardsDir + 'freibeuter-der-karibik/original');
 
 const t0 = performance.now();
-const cpu = await createCpu('unicorn');
+let cpu = await createCpu('unicorn');
 const tCpu = performance.now() - t0;
 const vfs = vfsFromDirs(...opt.cards);
 if (opt.language) {
@@ -60,35 +64,40 @@ if (opt.language) {
 const NOISY = new Set(['os_get_time_ms']);
 let wavHit = null;
 const recent = [];
-const m = await Machine.create({
-  vfs, appPath: opt.app, cpu, slice: opt.slice,
-  log: line => console.log(`[log] ${line}`),
-  trace: (t, task, n, text) => {
-    const line = `[${t.toFixed(3).padStart(10)} ms] ${task.padEnd(16)} ${text}`;
-    recent.push(line); if (recent.length > 40) recent.shift();
-    if (opt.trace && !(opt.quietTime && NOISY.has(text.slice(0, text.indexOf('('))))) console.log(line);
-  },
-});
 const opened = []; // {t, path} of successful fopens
-m.kuma.on.fileOpen = (path, ok) => {
-  if (ok) opened.push({ t: m.kernel.timeMs, path });
-  if (opt.trace || opt.files) console.log(`[file @ ${m.kernel.timeMs.toFixed(0)} ms] fopen ${path} ${ok ? 'ok' : 'FAILED'}`);
-  if (ok && /\.wav$/i.test(path) && !wavHit) wavHit = path;
-};
 let lastFrame = '';
-m.kuma.on.display = fb => {
-  const hex = Buffer.from(fb).toString('hex');
-  if (opt.trace) console.log(`[display] ${hex}`);
-  if (opt.display && hex !== lastFrame) console.log(`[frame @ ${m.kernel.timeMs.toFixed(0)} ms]\n${toAscii(fb)}`);
-  lastFrame = hex;
-};
-
+let m, base = 0; // base: virtual ms of the machines before the last os_exec
+const clock = () => base + m.kernel.timeMs;
+/** Boot `appPath` (again after an os_exec, keeping the board) and hook up the tracing. */
+async function start(appPath, board) {
+  m = await Machine.create({
+    vfs, appPath, cpu, slice: opt.slice, board,
+    log: line => console.log(`[log] ${line}`),
+    trace: (t, task, n, text) => {
+      const line = `[${t.toFixed(3).padStart(10)} ms] ${task.padEnd(16)} ${text}`;
+      recent.push(line); if (recent.length > 40) recent.shift();
+      if (opt.trace && !(opt.quietTime && NOISY.has(text.slice(0, text.indexOf('('))))) console.log(line);
+    },
+  });
+  m.kuma.on.fileOpen = (path, ok) => {
+    if (ok) opened.push({ t: clock(), path });
+    if (opt.trace || opt.files) console.log(`[file @ ${clock().toFixed(0)} ms] fopen ${path} ${ok ? 'ok' : 'FAILED'}`);
+    if (ok && /\.wav$/i.test(path) && !wavHit) wavHit = path;
+  };
+  m.kuma.on.display = fb => {
+    const hex = Buffer.from(fb).toString('hex');
+    if (opt.trace) console.log(`[display] ${hex}`);
+    if (opt.display && hex !== lastFrame) console.log(`[frame @ ${clock().toFixed(0)} ms]\n${toAscii(fb)}`);
+    lastFrame = hex;
+  };
+  m.onAudio = buf => {
+    for (const v of buf) audioPeak = Math.max(audioPeak, Math.abs(v));
+    if (opt.wav) pcm.push(buf.slice());
+  };
+}
 const pcm = [];
 let audioPeak = 0;
-m.onAudio = buf => {
-  for (const v of buf) audioPeak = Math.max(audioPeak, Math.abs(v));
-  if (opt.wav) pcm.push(buf.slice());
-};
+await start(opt.app);
 
 // Script steps: wait for a file open (or an absolute time), then delay, then press a key.
 const steps = (script?.steps ?? []).map(s => ({ ...s, re: s.afterFile ? new RegExp(s.afterFile, 'i') : null }));
@@ -124,7 +133,7 @@ function advanceSteps(now) {
 const tRun = performance.now();
 let result;
 while (true) {
-  const now = m.kernel.timeMs;
+  const now = clock();
   if (script) {
     advanceSteps(now);
     if (stepIdx >= steps.length && expectMatched() === expect.length) { result = 'script done'; break; }
@@ -133,9 +142,18 @@ while (true) {
   for (const p of opt.presses) if (now >= p.at && now < p.at + p.hold) keys |= 1 << p.key;
   if (keys !== m.kuma.keys) { if (opt.trace || opt.files) console.log(`[keys @ ${now.toFixed(0)} ms] 0x${keys.toString(16)}`); m.kuma.keys = keys; }
   result = m.runFor(10);
+  const exec = m.kuma.exitRequest;
+  if (result === 'halted' && opt.followExec && exec?.kind === 'exec') {
+    console.log(`[exec @ ${clock().toFixed(0)} ms] ${exec.path || 'app.elf'}`);
+    base = clock();
+    m.cpu.close();
+    cpu = await createCpu('unicorn');
+    await start(exec.path || 'app.elf', m.kuma.board);
+    continue;
+  }
   if (result !== 'time') break;
   if (opt.untilWav && wavHit) { result = `first wav: ${wavHit}`; break; }
-  if (m.kernel.timeMs >= opt.ms) break;
+  if (clock() >= opt.ms) break;
 }
 const wall = performance.now() - tRun;
 
@@ -145,7 +163,7 @@ if (m.fault || (m.halted && !/^app returned|^os_exec/.test(m.halted))) {
   console.log('last syscalls:\n' + recent.join('\n'));
   for (const t of m.kernel.tasks) console.log(m.dumpTask(t));
 }
-const vms = m.kernel.timeMs;
+const vms = clock();
 console.log(`unicorn load ${tCpu.toFixed(0)} ms; ran ${vms.toFixed(1)} ms virtual in ${wall.toFixed(0)} ms wall ` +
   `(${(vms / wall).toFixed(2)}x real time); ${m.syscalls} syscalls; ` +
   `>= ${(m.instructions / 1e6).toFixed(1)} M instr in full slices (${(m.instructions / wall / 1e3).toFixed(1)} MIPS)`);

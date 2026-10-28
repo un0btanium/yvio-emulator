@@ -3,9 +3,10 @@
     "Show as": "Basic"
   },
   "Console": {
+    "Boot from": "Game",
     "Audio volume": 80,
     "Console size": 33,
-    "Show unused OS keys": false
+    "Show OS keys": false
   },
   "Console Overlay": {
     "Opacity": 60,

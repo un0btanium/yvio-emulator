@@ -1,0 +1,15 @@
+{
+  "description": "Boot the console menu (root app.elf, card original): boot animation, menu texts, it finds the only game and starts it with os_exec; the game plays its intro",
+  "cards": ["freibeuter-der-karibik/original"],
+  "app": "app.elf",
+  "followExec": true,
+  "timeoutMs": 30000,
+  "steps": [],
+  "expectFiles": [
+    "^system/key_down\\.wav$",
+    "^menu/de_menu\\.txt$",
+    "^pirates/info\\.txt$",
+    "^pirates/files_de\\.txt$",
+    "^pirates/sounds/intro\\.wav$"
+  ]
+}

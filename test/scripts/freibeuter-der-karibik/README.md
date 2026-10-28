@@ -10,6 +10,11 @@ folder in them doesn't matter here.
 - `v1.1_language_de.json`, `v1.1_language_en.json`: `mode_choice` on version 1.1, with the card's
   default language (de) and with `"language": "en"`; the game then reads `texts_en.txt`,
   `files_en.txt` and plays `sounds/en/`.
+- `menu_boot.json`, `v1.1_menu_boot.json`: boot the console menu (root `app.elf`) instead of the
+  game. It plays a ~6 s boot animation (a tick sound per frame), reads root `lang.txt` (missing:
+  German) and `menu/de_menu.txt`, looks for `NAME/app.elf` in the root folders, and as there is
+  only one game it reads `PIRATES/info.txt` and starts it 1 s later with `os_exec`; the game then
+  plays its intro.
 - `goods_not_here.json`: one player (blue on Grain) starts on antenna 4, skips through the
   equipment prompts, then puts the ship on Tobacco, which that port doesn't take; the game
   says so twice. Keys are pressed 0.5 s into each prompt, which cuts the speech short, as a

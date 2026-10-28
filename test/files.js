@@ -4,6 +4,7 @@
 // - rerootAtCard() finds the card root (the folder with system/) below extra folders
 // - games() lists the game folders: root folders with an app.elf, not the console's own
 // - readLanguages()/setLanguage() read and select the languages of a game's lang.txt
+// - add() keeps the name of a file it replaces (any case, as on FAT)
 import { Vfs, readLanguages, withLanguage } from '../yvio-emulator/files.js';
 
 let ok = true;
@@ -34,6 +35,11 @@ check(same(v.games(), ['pirates']), 'folders without app.elf are no games');
 
 v = card(CONSOLE);
 check(v.games().length === 0, 'no game folder: none');
+
+// the game started by the console menu writes "PIRATES/lang.txt": the file keeps its name
+v = card([...CONSOLE, 'pirates/app.elf', 'pirates/lang.txt']);
+v.add('PIRATES/LANG.TXT', new Uint8Array(2));
+check(v.files.get('pirates/lang.txt').path === 'pirates/lang.txt' && v.get('pirates/lang.txt').length === 2, 'replacing a file keeps its name\'s case');
 
 v = card(['sdcard/pirates/app.elf', 'sdcard/pirates/files_de.txt']);
 check(same(v.games(), ['pirates']), 'no system/ folder: the common folder is stripped');

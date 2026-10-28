@@ -22,9 +22,7 @@ See the Quickstart guide below on how to play.
 
 ## Technical Info
 
-The website runs the game on Unicorn.js (ARM7) with a (partially) reimplemented kuma OS in JavaScript, an virtual LED display, console buttons and sounds, and a interactive RFID board on which to move the game figures between the RF antennas.
-
-The emulator directly loads the game's .elf file and skips the default boot and OS .elf files that always comes with the SD card. This very slightly alters the behaviour compared to playing on the original console. However, the games themselves should be unaffected by this and play normally.
+The website runs the game on Unicorn.js (ARM7) with a (partially) reimplemented kuma OS in JavaScript, an virtual LED display, console buttons and audio output, and a interactive RFID board on which to move the game figures between the virtual RF antennas.
 
 
 ## (Known) Supported Games 
@@ -41,13 +39,16 @@ Of course, you are free to already try out other games. The emulator will find t
 card root (any folder with an `app.elf` other than `emulator/`, `menu/`, `osup/` and `system/`; e.g.
 `pirates/` for Freibeuter). If a card has several such folders, you will be able to choose one.
 
-Feel free to reach out if you are having issues or can confirm that other games also work correctly.
+By default, this emulator boots directly into the game instead of the console menu. This is slightly different behaviour compared to playing on the original console. However, under **Settings → Console → Boot from** you can let it boot to the **console menu** (the card's root
+`app.elf`), just like the real console does: it plays its boot animation and then
+starts the game itself. For this purpose the console's OS keys are shown while the menu runs; it lets you choose between different languages and games first if there are more than one (select with the Volume buttons, confirm with the Menu button). The menu text will be in German unless the card has its own `lang.txt` at the root.
 
+Feel free to reach out if you are having issues or can confirm that other games also work correctly.
 
 
 ## Supported Languages
 
-A game with more than one language in its `lang.txt` will let you select one under **Console → Language** (this is hidden if there is just one language).
+A game with more than one language in its `lang.txt` will let you select one under **Console → Language** (this will be hidden if there is just one language).
 Technical note: This choice is written into the card copy's `lang.txt` (as the game's own menu does) and will be loaded on the next load already preselected.
 
 The emulator UI itself currently only comes in English. German might be supported in the future, if needed we recommend using the browser translation in the meantime.
@@ -150,8 +151,8 @@ python3 -m http.server 8000     # then open http://localhost:8000/
   - **Settings** (gear, bottom left) open on load as a panel left of the board (above it in
     portrait), so changes to the console size or overlay show at once. Sections: **Console** (load
     the card, **Power on** / Power off, pause (below the drop box one line: "Loaded: N game files, M emulator files. Ready!" after
-    loading, then "Playing…", "Paused." or "Ready!"), and the OS keys menu / volume −/+ (12–14) if "Show unused OS keys" is on in Settings → Console), **Board & Pictures** (antenna layout file, board and overlay pictures),
-    **Settings** (groups Figures: shown as Basic circles or Ships; Console: volume, console size; Console
+    loading, then "Playing…", "Paused." or "Ready!"), and the OS keys menu / volume −/+ (12–14) if "Show OS keys" is on in Settings → Console), **Board & Pictures** (antenna layout file, board and overlay pictures),
+    **Settings** (groups Figures: shown as Basic circles or Ships; Console: boot from game/console menu, volume, console size, Show OS keys; Console
     Overlay: overlay adjustment; Additional Overlays & Views: antenna ids, console key ids, antenna
     areas never / on interact / always, unused antennas; Fullscreen: fullscreen, keep awake),
     **Status & Logs**, **About** (disclaimer, licenses). Hiding the unused antennas moves ships on them off the board.
@@ -223,6 +224,7 @@ node test/run.js test/scripts/freibeuter-der-karibik/mode_choice.json   # script
 node test/run.js --files --display --press 3000:7     # file log, ASCII display, press key 7 at 3 s
 node test/run.js --app OTHER/app.elf --card cards/OTHER-GAME/original   # another game folder
 node test/run.js --language en --card cards/freibeuter-der-karibik/original-v1.1   # a language of lang.txt
+node test/run.js --app app.elf --follow-exec --files   # boot the console menu, follow it into the game
 ```
 Browser smoke test: serve this folder on port 8765 (`python3 -m http.server 8765`), start a
 headless Chromium-based browser with `--remote-debugging-port=9333` (it must be able to read the

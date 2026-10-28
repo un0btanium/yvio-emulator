@@ -21,10 +21,11 @@ export class Vfs {
     this.files = new Map();
   }
 
-  /** Add or replace a file. */
+  /** Add or replace a file. A replaced file keeps its name's case, as on FAT. */
   add(path, data) {
     const p = normPath(path);
-    this.files.set(p.toLowerCase(), { path: p, data });
+    const key = p.toLowerCase();
+    this.files.set(key, { path: this.files.get(key)?.path ?? p, data });
   }
 
   /** @returns {Uint8Array|null} */

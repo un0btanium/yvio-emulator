@@ -169,11 +169,14 @@ for (const d of $('settings').querySelectorAll('details[data-section]')) {
 // Defaults are in settings.js: all but the areas (shown on interaction: hover, drag,
 // tap-to-place) are off; the figures are drawn as plain coloured circles, or as ships.
 const VIEW_CHECKS = { 'view-antenna-ids': 'show-antenna-ids', 'view-key-ids': 'show-key-ids' };
-// The OS keys (menu, volume −/+) do nothing in the game: hidden unless asked for.
+// The OS keys (menu, volume −/+): hidden unless asked for, or while the
+// console menu runs (it uses them).
+let menuRunning = false;
+function showOsKeys() { $('os-keys').hidden = !$('view-os-keys').checked && !menuRunning; }
 $('view-os-keys').checked = store.get('view-os-keys') ?? defaultOf('view-os-keys');
-$('os-keys').hidden = !$('view-os-keys').checked;
+showOsKeys();
 $('view-os-keys').addEventListener('change', () => {
-  $('os-keys').hidden = !$('view-os-keys').checked;
+  showOsKeys();
   store.set('view-os-keys', $('view-os-keys').checked);
 });
 for (const [id, cls] of Object.entries(VIEW_CHECKS)) {
@@ -197,6 +200,11 @@ function viewSelect(id, prefix) {
 }
 viewSelect('view-areas', 'areas');
 viewSelect('view-figures', 'figures'); // plain coloured circles or ship drawings
+// Boot from the game, or from the console menu (the card's root app.elf), which then starts a
+// game with os_exec as on the console. Applies at the next Power on.
+$('boot-from').value = store.get('boot-from') ?? defaultOf('boot-from');
+if (!$('boot-from').value) $('boot-from').value = defaultOf('boot-from');
+$('boot-from').addEventListener('change', () => store.set('boot-from', $('boot-from').value));
 function setUnused() {
   board.showUnused($('view-unused').checked);
   store.set('view-unused', $('view-unused').checked);
@@ -521,7 +529,12 @@ async function powerOn() {
     transfer.push(data.buffer);
   }
   if (audioPort) transfer.push(audioPort);
-  worker.postMessage({ type: 'boot', files, appPath: `${game}/app.elf`, audioPort, placements: board.placements() }, transfer);
+  let appPath = `${game}/app.elf`;
+  if ($('boot-from').value === 'menu') {
+    if (vfs.has('app.elf')) appPath = 'app.elf';
+    else log('no console menu (app.elf) on the card: starting the game');
+  }
+  worker.postMessage({ type: 'boot', files, appPath, audioPort, placements: board.placements() }, transfer);
   vfs = null; // the buffers now belong to the worker; power off hands them back
 
   paused = false;
@@ -569,6 +582,7 @@ function onShutdown(files) {
   audioCtx = audioNode = null;
   con.releaseAll();
   con.show(new Uint8Array(24));
+  followApp('');
   $('st-app').textContent = 'off';
   $('st-speed').textContent = '–';
   $('st-audio').textContent = '–';
@@ -595,6 +609,26 @@ $('pause').addEventListener('click', async () => {
   if (paused) await audioCtx?.suspend(); else await audioCtx?.resume();
 });
 
+/**
+ * Track the running app: the OS keys show while the console menu runs, and a game the menu
+ * started (e.g. "PIRATES/app.elf") becomes the selected game.
+ * @param {string} app  the app path from the worker, '' when off
+ */
+function followApp(app) {
+  const menu = app.toLowerCase() === 'app.elf';
+  if (menu === menuRunning) return;
+  menuRunning = menu;
+  showOsKeys();
+  if (menu || !app) return;
+  log(`the console menu started ${app}`);
+  const folder = app.split('/').slice(0, -1).join('/').toLowerCase();
+  const pick = [...$('game').options].find(o => o.value.toLowerCase() === folder);
+  if (pick && pick.value !== game) {
+    $('game').value = game = pick.value;
+    store.set('game', game);
+  }
+}
+
 // ---- worker messages ---------------------------------------------------------------------
 function onWorkerMessage({ data }) {
   switch (data.type) {
@@ -606,6 +640,7 @@ function onWorkerMessage({ data }) {
       else if (!data.ok) log(`fopen failed: ${data.path}`);
       break;
     case 'status':
+      followApp(data.app);
       $('st-app').textContent = data.app + (data.halted ? ` — halted: ${data.halted}` : '');
       $('st-time').textContent = formatTime(data.virtualMs);
       $('st-speed').textContent = data.speed ? `${(data.speed * 100).toFixed(0)} % of real time` : '–';
