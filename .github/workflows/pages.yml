@@ -43,11 +43,14 @@ jobs:
           cp -r ui yvio-emulator vendor examples _site/
           mkdir _site/test && cp test/benchmark.html _site/test/
 
+      # The README's screenshots of our page (no game artwork) are allowed by exact path only.
       - name: Check the site contains only our own code
         run: |
           bad=$(cd _site && find . -type f \
             ! -name '*.html' ! -name '*.js' ! -name '*.css' ! -name '*.json' \
-            ! -name 'LICENSE' ! -name 'COPYING.LGPL2' ! -name 'COPYING_GLIB' ! -name 'README.md')
+            ! -name 'LICENSE' ! -name 'COPYING.LGPL2' ! -name 'COPYING_GLIB' ! -name 'README.md' \
+            ! -path './examples/preview.png' ! -path './examples/setup01.png' \
+            ! -path './examples/setup02.png' ! -path './examples/setup03.png')
           layouts=$(cd _site && find . -name 'board-antennas-*.json' ! -name 'board-antennas-example.json')
           if [ -n "$bad$layouts" ]; then echo "Not allowed on the site:"; echo "$bad$layouts"; exit 1; fi
           find _site -type f | sort
