@@ -1,0 +1,15 @@
+{
+  "description": "Console menu with English selected in the card root's lang.txt: it reads menu/en_menu.txt; key 12 starts the first game",
+  "cards": ["freibeuter-der-karibik/original-v1.0-and-v1.1"],
+  "app": "app.elf",
+  "menuLanguage": "en",
+  "followExec": true,
+  "timeoutMs": 30000,
+  "steps": [
+    { "afterFile": "^pirates2/info\\.txt$", "delay": 2000, "key": 12 }
+  ],
+  "expectFiles": [
+    "^menu/en_menu\\.txt$",
+    "^pirates/sounds/intro\\.wav$"
+  ]
+}

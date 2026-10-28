@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 // Headless runner for the emulator core (yvio-emulator/*).
-//   node test/run.js [--card DIR]... [--app PATH] [--language CODE] [--trace] [--quiet-time] [--until-wav] [--ms N] [--wav OUT] [--slice N] [--display] [--press MS:KEY[:HOLD],...] [--follow-exec]
+//   node test/run.js [--card DIR]... [--app PATH] [--language CODE] [--trace] [--quiet-time] [--until-wav] [--ms N] [--wav OUT] [--slice N] [--display] [--press MS:KEY[:HOLD],...] [--follow-exec] [--menu-language CODE]
 //   node test/run.js test/scripts/GAME/NAME.json [options]   run a test script (see test/scripts/README.md); exit 1 on failure
 // --card may repeat; later cards override files of earlier ones. Without --card it uses cards/freibeuter-der-karibik/original
 // (cards/ is git-ignored: put or link your own SD-card copies there as cards/GAME/VERSION/;
 // YVIO_CARDS sets another folder). --language selects a language of the game's lang.txt
-// (e.g. "en" on Freibeuter der Karibik 1.1), as the page's Language choice does.
+// (e.g. "en" on Freibeuter der Karibik 1.1), as the page's Language choice does; --menu-language
+// (script: "menuLanguage") selects one of the card root's lang.txt, the console menu's language.
 // --follow-exec (script: "followExec": true) reboots into the app an os_exec names, as the page
 // does (e.g. the console menu app.elf starting PIRATES/app.elf); times then run on across reboots.
 
@@ -17,7 +18,7 @@ import { createCpu } from '../yvio-emulator/cpu.js';
 import { toAscii } from '../yvio-emulator/display.js';
 
 const args = process.argv.slice(2);
-const opt = { cards: [], app: 'pirates/app.elf', trace: false, quietTime: false, untilWav: false, ms: 10000, wav: null, slice: undefined, display: false, presses: [], files: false, language: null, followExec: false };
+const opt = { cards: [], app: 'pirates/app.elf', trace: false, quietTime: false, untilWav: false, ms: 10000, wav: null, slice: undefined, display: false, presses: [], files: false, language: null, followExec: false, menuLanguage: null };
 for (let i = 0; i < args.length; i++) {
   const a = args[i];
   if (a === '--card') opt.cards.push(args[++i]);
@@ -32,6 +33,7 @@ for (let i = 0; i < args.length; i++) {
   else if (a === '--display') opt.display = true;
   else if (a === '--files') opt.files = true;
   else if (a === '--follow-exec') opt.followExec = true;
+  else if (a === '--menu-language') opt.menuLanguage = args[++i];
   else if (a === '--press') opt.presses = args[++i].split(',').map(p => { const [at, key, hold = 150] = p.split(':').map(Number); return { at, key, hold }; });
   else if (!a.startsWith('--') && a.endsWith('.json')) opt.script = JSON.parse(readFileSync(a, 'utf8'));
   else { console.error(`unknown option ${a}`); process.exit(2); }
@@ -43,6 +45,7 @@ if (script) {
   if (script.app) opt.app = script.app;
   if (script.language) opt.language ??= script.language;
   if (script.followExec) opt.followExec = true;
+  if (script.menuLanguage) opt.menuLanguage ??= script.menuLanguage;
   opt.ms = script.timeoutMs ?? 120000;
   opt.files = opt.files || !!script.verbose;
   console.log(`script: ${script.description ?? '(no description)'}`);
@@ -53,14 +56,15 @@ const t0 = performance.now();
 let cpu = await createCpu('unicorn');
 const tCpu = performance.now() - t0;
 const vfs = vfsFromDirs(...opt.cards);
-if (opt.language) {
-  const game = opt.app.split('/').slice(0, -1).join('/');
-  if (!vfs.setLanguage(game, opt.language)) {
-    const langs = vfs.languages(game);
-    console.error(`${game} has no language "${opt.language}" (lang.txt: ${langs ? langs.languages.map(l => l.code).join(', ') : 'none'})`);
-    process.exit(2);
-  }
+/** Select `code` in `folder`'s lang.txt ('' = the card root, the console menu's), or exit. */
+function selectLanguage(folder, code) {
+  if (vfs.setLanguage(folder, code)) return;
+  const langs = vfs.languages(folder);
+  console.error(`${folder || 'the card root'} has no language "${code}" (lang.txt: ${langs ? langs.languages.map(l => l.code).join(', ') : 'none'})`);
+  process.exit(2);
 }
+if (opt.language) selectLanguage(opt.app.split('/').slice(0, -1).join('/'), opt.language);
+if (opt.menuLanguage) selectLanguage('', opt.menuLanguage);
 const NOISY = new Set(['os_get_time_ms']);
 let wavHit = null;
 const recent = [];
@@ -182,8 +186,15 @@ if (opt.wav) {
 }
 if (script) {
   const got = expectMatched();
-  const ok = got === expect.length && stepIdx >= steps.length;
-  console.log(`script ${ok ? 'PASSED' : 'FAILED'}: ${got}/${expect.length} expected files, ${stepIdx}/${steps.length} steps`);
+  // "expectLanguage": {"FOLDER": "code"}: the language selected in FOLDER/lang.txt at the end ('' = card root)
+  const langWrong = Object.entries(script.expectLanguage ?? {}).map(([folder, code]) => {
+    const langs = vfs.languages(folder);
+    const now = langs?.languages[langs.selected]?.code ?? 'none';
+    return now === code ? null : `${folder || 'card root'}/lang.txt selects ${now}, expected ${code}`;
+  }).filter(Boolean);
+  const ok = got === expect.length && stepIdx >= steps.length && !langWrong.length;
+  console.log(`script ${ok ? 'PASSED' : 'FAILED'}: ${got}/${expect.length} expected files, ${stepIdx}/${steps.length} steps` +
+    (script.expectLanguage ? `, languages ${langWrong.length ? langWrong.join('; ') : 'as expected'}` : ''));
   if (!ok) {
     if (got < expect.length) console.log(`  next expected file: /${expect[got].source}/`);
     console.log('  files opened:\n' + opened.map(f => `    ${f.t.toFixed(0).padStart(7)} ms  ${f.path}`).join('\n'));

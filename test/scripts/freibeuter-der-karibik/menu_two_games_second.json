@@ -1,0 +1,16 @@
+{
+  "description": "Console menu on a card with two games: key 13 (volume −) moves to the second game, key 12 (menu) starts it",
+  "cards": ["freibeuter-der-karibik/original-v1.0-and-v1.1"],
+  "app": "app.elf",
+  "followExec": true,
+  "timeoutMs": 30000,
+  "steps": [
+    { "afterFile": "^pirates2/info\\.txt$", "delay": 2000, "key": 13 },
+    { "delay": 2000, "key": 12 }
+  ],
+  "expectFiles": [
+    "^pirates2/info\\.txt$",
+    "^pirates2/files_de\\.txt$",
+    "^pirates2/sounds/intro\\.wav$"
+  ]
+}

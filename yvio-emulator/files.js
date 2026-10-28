@@ -115,7 +115,10 @@ export class Vfs {
       .sort((a, b) => a.localeCompare(b));
   }
 
-  /** The languages of a game folder (from GAME/lang.txt, see readLanguages), or null. */
+  /**
+   * The languages of a game folder (from GAME/lang.txt, see readLanguages), or null. `game` ''
+   * means the card root: the console menu's lang.txt (same format).
+   */
   languages(game) {
     return readLanguages(this.get(`${game}/lang.txt`));
   }

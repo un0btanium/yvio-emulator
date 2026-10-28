@@ -15,6 +15,19 @@ folder in them doesn't matter here.
   German) and `menu/de_menu.txt`, looks for `NAME/app.elf` in the root folders, and as there is
   only one game it reads `PIRATES/info.txt` and starts it 1 s later with `os_exec`; the game then
   plays its intro.
+- On `cards/freibeuter-der-karibik/original-v1.0-and-v1.1` (two games: version 1.0 in `pirates/`,
+  1.1 in `pirates2/`, plus a root `lang.txt` with de and en for the menu, a copy of
+  `pirates2/lang.txt`) the menu waits in its game selection: 13/14 (volume −/+) move between the
+  two games and an entry that leads one level up, 12 (menu) chooses. One level up are the game
+  selection and, with two or more languages in the root `lang.txt`, the language selection.
+  - `menu_two_games_first.json`: 12 starts the first game (`pirates/`).
+  - `menu_two_games_second.json`: 13, 12 start the second one (`pirates2/`).
+  - `menu_up_back.json`: 14, 12 go one level up, 12 back into the game selection, 12 starts the first game.
+  - `menu_language_en.json`: English selected in the root `lang.txt` → `menu/en_menu.txt`.
+  - `menu_choose_language.json`: 14, 12 (up), 13, 12 (language selection), 13, 12 (English): the
+    menu writes byte 1 of the root `lang.txt` (opened with mode "a", then fseek 1) and reads
+    `menu/en_menu.txt`.
+  With only one game (the other cards) the menu starts it about 1 s after reading its `info.txt`.
 - `goods_not_here.json`: one player (blue on Grain) starts on antenna 4, skips through the
   equipment prompts, then puts the ship on Tobacco, which that port doesn't take; the game
   says so twice. Keys are pressed 0.5 s into each prompt, which cuts the speech short, as a

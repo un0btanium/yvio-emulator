@@ -1,0 +1,19 @@
+{
+  "description": "Console menu: one level up (14, 12), to the language selection (13, 12), choose English (13, 12); the menu writes the card root's lang.txt and reads menu/en_menu.txt",
+  "cards": ["freibeuter-der-karibik/original-v1.0-and-v1.1"],
+  "app": "app.elf",
+  "timeoutMs": 30000,
+  "steps": [
+    { "afterFile": "^pirates2/info\\.txt$", "delay": 2000, "key": 14 },
+    { "delay": 2000, "key": 12 },
+    { "delay": 2000, "key": 13 },
+    { "delay": 2000, "key": 12 },
+    { "delay": 2000, "key": 13 },
+    { "delay": 2000, "key": 12 }
+  ],
+  "expectFiles": [
+    "^menu/de_menu\\.txt$",
+    "^menu/en_menu\\.txt$"
+  ],
+  "expectLanguage": { "": "en" }
+}

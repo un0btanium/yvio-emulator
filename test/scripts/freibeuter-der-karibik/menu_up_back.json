@@ -1,0 +1,19 @@
+{
+  "description": "Console menu on a card with two games: key 14 (volume +) to the entry that leads one level up, key 12 enters it, key 12 goes back into the game selection, key 12 starts the first game",
+  "cards": ["freibeuter-der-karibik/original-v1.0-and-v1.1"],
+  "app": "app.elf",
+  "followExec": true,
+  "timeoutMs": 40000,
+  "steps": [
+    { "afterFile": "^pirates2/info\\.txt$", "delay": 2000, "key": 14 },
+    { "delay": 2000, "key": 12 },
+    { "delay": 2000, "key": 12 },
+    { "afterFile": "^pirates2/info\\.txt$", "delay": 2000, "key": 12 }
+  ],
+  "expectFiles": [
+    "^pirates2/info\\.txt$",
+    "^pirates2/info\\.txt$",
+    "^pirates/files_de\\.txt$",
+    "^pirates/sounds/intro\\.wav$"
+  ]
+}
