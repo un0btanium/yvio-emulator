@@ -43,6 +43,8 @@ By default, this emulator boots directly into the game instead of the console me
 `app.elf`), just like the real console does: it plays its boot animation and then
 starts the game itself. For this purpose the console's OS keys are shown while the menu runs; it lets you choose between different languages and games first if there are more than one (select with the Volume buttons, confirm with the Menu button). The menu text will be in German unless the card has its own `lang.txt` at the root.
 
+The console's **Vol −/+** keys (shown under **Settings → Console → Show OS keys**, and always while the console menu runs) change the volume as on the console, in steps of 4 of 255, and **Settings → Console → Audio volume** follows them; moving the slider sets the console volume too. The page plays the sound at the slider's percentage (the real console attenuates in coarser 6 dB steps).
+
 Feel free to reach out if you are having issues or can confirm that other games also work correctly.
 
 
@@ -151,7 +153,7 @@ python3 -m http.server 8000     # then open http://localhost:8000/
   - **Settings** (gear, bottom left) open on load as a panel left of the board (above it in
     portrait), so changes to the console size or overlay show at once. Sections: **Console** (load
     the card, **Power on** / Power off, pause (below the drop box one line: "Loaded: N game files, M emulator files. Ready!" after
-    loading, then "Playing…", "Paused." or "Ready!"), and the OS keys menu / volume −/+ (12–14) if "Show OS keys" is on in Settings → Console), **Board & Pictures** (antenna layout file, board and overlay pictures),
+    loading, then "Playing…", "Paused." or "Ready!"), and the OS keys menu / volume −/+ (12–14) if "Show OS keys" is on in Settings → Console or the console menu runs; volume −/+ change the console volume, and Settings → Console → Audio volume follows), **Board & Pictures** (antenna layout file, board and overlay pictures),
     **Settings** (groups Figures: shown as Basic circles or Ships; Console: boot from game/console menu, volume, console size, Show OS keys; Console
     Overlay: overlay adjustment; Additional Overlays & Views: antenna ids, console key ids, antenna
     areas never / on interact / always, unused antennas; Fullscreen: fullscreen, keep awake),

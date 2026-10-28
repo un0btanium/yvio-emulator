@@ -6,6 +6,7 @@
 // Keys are pressed on the console with the pointer.
 // With --join it continues: mode Normal (key 5 twice), then drags the blue ship from the
 // drawer onto Grain and the green ship onto Rum and checks that the game announces two players.
+// Then it shows the OS keys and presses volume + (14): the Audio volume slider must follow.
 // Finally it powers the console off and on again and checks that it boots once more.
 // With --extras the card must bring emulator/board.png, console_overlay.png and board-antennas.json;
 // with --card-settings also emulator/settings.json.
@@ -42,9 +43,10 @@ async function waitFor(expr, ms = 30000) {
   for (let t = 0; t < ms; t += 250) { if (await ev(expr)) return true; await sleep(250); }
   return false;
 }
-/** Press console key k with the pointer. */
+/** Press console key k with the pointer (the OS keys 12–14 are in the Console section). */
 async function key(k, holdMs = 150) {
-  const { x, y } = await ev(`(() => { const r = document.querySelector('.device .key[data-key="${k}"]').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()`);
+  const sel = k >= 12 ? `#os-keys .key[data-key="${k}"]` : `.device .key[data-key="${k}"]`;
+  const { x, y } = await ev(`(() => { const b = document.querySelector('${sel}'); b.scrollIntoView({ block: 'center' }); const r = b.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()`);
   await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 });
   await sleep(holdMs);
   await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 });
@@ -181,6 +183,16 @@ if (process.argv.includes('--join')) {
   await sleep(2500); await key(6);
   check(await heard('p0242'), 'key 6 -> players_2 p0242');
 }
+// volume +: the console volume (slider % as 0..255) goes up by 4 and the slider follows
+// (on a phone the drawer for the ships closed the settings, where the OS keys are)
+await ev("document.getElementById('settings').hidden && document.getElementById('open-settings').click(), 1");
+await sleep(300);
+await ev("(c => { if (!c.checked) { c.checked = true; c.dispatchEvent(new Event('change')); } return 1; })(document.getElementById('view-os-keys'))");
+const vol0 = Number(await ev("document.getElementById('volume').value"));
+const volWant = Math.round((Math.round(vol0 * 255 / 100) + 4) * 100 / 255);
+await key(14);
+check(await waitFor(`Number(document.getElementById('volume').value) === ${volWant}`, 5000),
+  `key 14 (volume +) moves the Audio volume slider ${vol0} -> ${volWant} (now ${await ev("document.getElementById('volume').value")})`);
 const intros = () => ev("[...document.querySelectorAll('#sounds li')].filter(l => /intro\\.wav/.test(l.textContent)).length");
 const before = await intros();
 await ev("document.getElementById('power').click(), 1");

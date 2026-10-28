@@ -549,7 +549,8 @@ async function powerOn() {
     transfer.push(data.buffer);
   }
   if (audioPort) transfer.push(audioPort);
-  worker.postMessage({ type: 'boot', files, appPath, audioPort, placements: board.placements() }, transfer);
+  worker.postMessage({ type: 'boot', files, appPath, audioPort, placements: board.placements(),
+    volume: toConsoleVolume(Number($('volume').value)) }, transfer);
   vfs = null; // the buffers now belong to the worker; power off hands them back
 
   paused = false;
@@ -608,12 +609,18 @@ function onShutdown(files) {
   log('powered off');
 }
 
+// The Audio volume slider (0–100 %) is the console volume (0–255, OS keys 13/14 change it by 4):
+// both follow each other, the output gain is linear in the slider.
+const toConsoleVolume = pct => Math.round(pct * 255 / 100);
 function setVolume() {
   audioNode?.port.postMessage({ type: 'volume', value: Number($('volume').value) / 100 });
   store.set('volume', Number($('volume').value));
 }
 $('volume').value = String(store.get('volume') ?? defaultOf('volume'));
-$('volume').addEventListener('input', setVolume);
+$('volume').addEventListener('input', () => {
+  setVolume();
+  worker?.postMessage({ type: 'volume', value: toConsoleVolume(Number($('volume').value)) });
+});
 
 $('pause').addEventListener('click', async () => {
   if (!worker) return;
@@ -662,6 +669,10 @@ function onWorkerMessage({ data }) {
       $('st-app').textContent = data.app + (data.halted ? ` — halted: ${data.halted}` : '');
       $('st-time').textContent = formatTime(data.virtualMs);
       $('st-speed').textContent = data.speed ? `${(data.speed * 100).toFixed(0)} % of real time` : '–';
+      break;
+    case 'volume': // the app changed the console volume (keys 13/14, or its default 200 at boot)
+      $('volume').value = String(Math.round(data.value * 100 / 255));
+      setVolume();
       break;
     case 'log':
       log(data.text);

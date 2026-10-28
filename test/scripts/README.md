@@ -13,6 +13,9 @@ script.
   when the menu starts the game; times run on across reboots (`--follow-exec` on the command line).
 - `menuLanguage`: optional, a language code of the card root's `lang.txt` (the console menu's
   language, same format as a game's), selected before boot (`--menu-language`).
+- `volume`: optional, the console volume 0..255 the OS has saved (the page passes its Audio volume
+  slider, 80 % = 204); default 0 = none saved, then the apps set 200 at their first sound (`--volume`).
+- `expectVolume`: optional, the console volume when the script ends (keys 13/14 change it by 4).
 - `expectLanguage`: optional, `{"FOLDER": "code"}`: the language selected in `FOLDER/lang.txt` when
   the script ends (`""` = the card root), e.g. after choosing one in a menu.
 - `steps`: run in order. Each step waits until a file matching `afterFile` (regex) is opened

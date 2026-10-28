@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 // Headless runner for the emulator core (yvio-emulator/*).
-//   node test/run.js [--card DIR]... [--app PATH] [--language CODE] [--trace] [--quiet-time] [--until-wav] [--ms N] [--wav OUT] [--slice N] [--display] [--press MS:KEY[:HOLD],...] [--follow-exec] [--menu-language CODE]
+//   node test/run.js [--card DIR]... [--app PATH] [--language CODE] [--trace] [--quiet-time] [--until-wav] [--ms N] [--wav OUT] [--slice N] [--display] [--press MS:KEY[:HOLD],...] [--follow-exec] [--menu-language CODE] [--volume N]
 //   node test/run.js test/scripts/GAME/NAME.json [options]   run a test script (see test/scripts/README.md); exit 1 on failure
 // --card may repeat; later cards override files of earlier ones. Without --card it uses cards/freibeuter-der-karibik/original
 // (cards/ is git-ignored: put or link your own SD-card copies there as cards/GAME/VERSION/;
 // YVIO_CARDS sets another folder). --language selects a language of the game's lang.txt
 // (e.g. "en" on Freibeuter der Karibik 1.1), as the page's Language choice does; --menu-language
 // (script: "menuLanguage") selects one of the card root's lang.txt, the console menu's language.
+// --volume (script: "volume") is the console volume 0..255 the OS has saved (default 0: none, the
+// apps then set 200); it carries over os_exec reboots.
 // --follow-exec (script: "followExec": true) reboots into the app an os_exec names, as the page
 // does (e.g. the console menu app.elf starting PIRATES/app.elf); times then run on across reboots.
 
@@ -18,7 +20,7 @@ import { createCpu } from '../yvio-emulator/cpu.js';
 import { toAscii } from '../yvio-emulator/display.js';
 
 const args = process.argv.slice(2);
-const opt = { cards: [], app: 'pirates/app.elf', trace: false, quietTime: false, untilWav: false, ms: 10000, wav: null, slice: undefined, display: false, presses: [], files: false, language: null, followExec: false, menuLanguage: null };
+const opt = { cards: [], app: 'pirates/app.elf', trace: false, quietTime: false, untilWav: false, ms: 10000, wav: null, slice: undefined, display: false, presses: [], files: false, language: null, followExec: false, menuLanguage: null, volume: undefined };
 for (let i = 0; i < args.length; i++) {
   const a = args[i];
   if (a === '--card') opt.cards.push(args[++i]);
@@ -34,6 +36,7 @@ for (let i = 0; i < args.length; i++) {
   else if (a === '--files') opt.files = true;
   else if (a === '--follow-exec') opt.followExec = true;
   else if (a === '--menu-language') opt.menuLanguage = args[++i];
+  else if (a === '--volume') opt.volume = Number(args[++i]);
   else if (a === '--press') opt.presses = args[++i].split(',').map(p => { const [at, key, hold = 150] = p.split(':').map(Number); return { at, key, hold }; });
   else if (!a.startsWith('--') && a.endsWith('.json')) opt.script = JSON.parse(readFileSync(a, 'utf8'));
   else { console.error(`unknown option ${a}`); process.exit(2); }
@@ -46,6 +49,7 @@ if (script) {
   if (script.language) opt.language ??= script.language;
   if (script.followExec) opt.followExec = true;
   if (script.menuLanguage) opt.menuLanguage ??= script.menuLanguage;
+  if (script.volume !== undefined) opt.volume ??= script.volume;
   opt.ms = script.timeoutMs ?? 120000;
   opt.files = opt.files || !!script.verbose;
   console.log(`script: ${script.description ?? '(no description)'}`);
@@ -73,9 +77,9 @@ let lastFrame = '';
 let m, base = 0; // base: virtual ms of the machines before the last os_exec
 const clock = () => base + m.kernel.timeMs;
 /** Boot `appPath` (again after an os_exec, keeping the board) and hook up the tracing. */
-async function start(appPath, board) {
+async function start(appPath, board, volume = opt.volume) {
   m = await Machine.create({
-    vfs, appPath, cpu, slice: opt.slice, board,
+    vfs, appPath, cpu, slice: opt.slice, board, volume,
     log: line => console.log(`[log] ${line}`),
     trace: (t, task, n, text) => {
       const line = `[${t.toFixed(3).padStart(10)} ms] ${task.padEnd(16)} ${text}`;
@@ -152,7 +156,7 @@ while (true) {
     base = clock();
     m.cpu.close();
     cpu = await createCpu('unicorn');
-    await start(exec.path || 'app.elf', m.kuma.board);
+    await start(exec.path || 'app.elf', m.kuma.board, m.kuma.volume.saved);
     continue;
   }
   if (result !== 'time') break;
@@ -192,13 +196,16 @@ if (script) {
     const now = langs?.languages[langs.selected]?.code ?? 'none';
     return now === code ? null : `${folder || 'card root'}/lang.txt selects ${now}, expected ${code}`;
   }).filter(Boolean);
-  const ok = got === expect.length && stepIdx >= steps.length && !langWrong.length;
+  const volWrong = script.expectVolume !== undefined && m.kuma.volume.saved !== script.expectVolume;
+  const ok = got === expect.length && stepIdx >= steps.length && !langWrong.length && !volWrong;
   console.log(`script ${ok ? 'PASSED' : 'FAILED'}: ${got}/${expect.length} expected files, ${stepIdx}/${steps.length} steps` +
-    (script.expectLanguage ? `, languages ${langWrong.length ? langWrong.join('; ') : 'as expected'}` : ''));
+    (script.expectLanguage ? `, languages ${langWrong.length ? langWrong.join('; ') : 'as expected'}` : '') +
+    (script.expectVolume !== undefined ? `, volume ${m.kuma.volume.saved} (expected ${script.expectVolume})` : ''));
   if (!ok) {
     if (got < expect.length) console.log(`  next expected file: /${expect[got].source}/`);
     console.log('  files opened:\n' + opened.map(f => `    ${f.t.toFixed(0).padStart(7)} ms  ${f.path}`).join('\n'));
   }
   process.exitCode = ok ? 0 : 1;
 }
+console.log(`console volume: ${m.kuma.volume.saved}`);
 console.log(`tasks: ${m.kernel.tasks.map(t => `${t.name}(p${t.prio},${t.state}${t.wait ? ':' + t.wait.kind : ''})`).join(' ')}`);

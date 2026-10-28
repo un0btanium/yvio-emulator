@@ -1,0 +1,14 @@
+{
+  "description": "Saved console volume 204 (the page's 80 %): the game keeps it; during the intro key 14 (volume +) twice and key 13 (volume −) once, 4 steps each -> 208",
+  "cards": ["freibeuter-der-karibik/original"],
+  "volume": 204,
+  "timeoutMs": 20000,
+  "steps": [
+    { "afterFile": "sounds/intro\\.wav$", "delay": 1000, "key": 14 },
+    { "delay": 1000, "key": 14 },
+    { "delay": 1000, "key": 13 },
+    { "delay": 1000 }
+  ],
+  "expectFiles": ["^pirates/sounds/intro\\.wav$"],
+  "expectVolume": 208
+}

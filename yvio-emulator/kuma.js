@@ -35,8 +35,10 @@ export class Kuma {
    * @param {number} o.osRam  base of the emulator-owned RAM area for handles and buffers
    * @param {string} o.appPath  path of the running app, e.g. "pirates/app.elf" (becomes argv[0])
    * @param {Board} [o.board]  the virtual board (kept across app restarts)
+   * @param {number} [o.volume]  the saved volume 0..255 (the OS keeps it across resets; 0 = none,
+   *   then the apps set 200 at their first sound)
    */
-  constructor({ cpu, kernel, vfs, osRam, appPath, board = new Board() }) {
+  constructor({ cpu, kernel, vfs, osRam, appPath, board = new Board(), volume = 0 }) {
     this.cpu = cpu;
     this.kernel = kernel;
     this.vfs = vfs;
@@ -46,7 +48,9 @@ export class Kuma {
     this.display = new Uint8Array(24);
     this.randState = 0;
     this.audio = null;               // {fmt:number[], callback, userPtr} after audio_open
-    this.volume = [0, 0, 0, 0];
+    // OS.elf sys40/sys39: left/right volume 0..255, the channel 3 value, and the saved volume
+    // (L + R) / 2 that audio_get_param(0) returns
+    this.volume = { left: volume, right: volume, ch3: 0, saved: volume };
     this.exitRequest = null;         // {kind, path, arg} when the app restarts or execs
     /** event hooks set by the machine/UI */
     this.on = {
@@ -54,6 +58,7 @@ export class Kuma {
       fileOpen: (/** @type {string} */ _path, /** @type {boolean} */ _ok) => {},
       fileWrite: (/** @type {string} */ _path, /** @type {Uint8Array} */ _data) => {},
       audioOpen: () => {},
+      volume: (/** @type {number} */ _saved) => {},
       exit: () => {},
       log: (/** @type {string} */ _msg) => {},
     };
@@ -217,8 +222,22 @@ export class Kuma {
         return 0;
       },
       audio_wait_or_stop() { return 0; },
-      audio_get_param() { return 0; },
-      audio_set_volume(ch, v) { k.volume[ch & 3] = Math.max(0, Math.min(255, v | 0)); },
+      audio_get_param(which) {
+        const vol = k.volume;
+        return [vol.saved, vol.left, vol.right, vol.ch3][which] ?? EINVAL;
+      },
+      // 0 = both channels, 1 = left, 2 = right, 3 = amplifier setting, 4 = on/off (ignored here)
+      audio_set_volume(ch, v) {
+        v = Math.max(0, Math.min(255, v | 0));
+        const vol = k.volume;
+        if (ch === 0 || ch === 1) vol.left = v;
+        if (ch === 0 || ch === 2) vol.right = v;
+        if (ch === 3) vol.ch3 = v;
+        if (ch > 4) return EINVAL;
+        const saved = (vol.left + vol.right) >> 1;
+        if (saved !== vol.saved) { vol.saved = saved; k.on.volume(saved); }
+        return v;
+      },
     };
     const all = { ...os, ...tn };
     return SYSCALLS.map(s => all[s.name] ?? null);
@@ -227,6 +246,12 @@ export class Kuma {
   /** Block the calling task for `ms` of virtual time (a busy device), then return `r0`. */
   busy(ms, r0) {
     return this.kernel.block({ kind: 'busy', onTimeout: t => { t.ctx[0] = r0 >>> 0; } }, ms);
+  }
+
+  /** Set both channels and the saved volume from outside (the page's volume slider), no hook. */
+  setVolume(v) {
+    v = Math.max(0, Math.min(255, v | 0));
+    Object.assign(this.volume, { left: v, right: v, saved: v });
   }
 
   exit(kind, path = '', arg = '') {

@@ -1,0 +1,8 @@
+{
+  "description": "No saved console volume (0): the game sets 200 at its first sound",
+  "cards": ["freibeuter-der-karibik/original"],
+  "timeoutMs": 10000,
+  "steps": [],
+  "expectFiles": ["^pirates/sounds/intro\\.wav$"],
+  "expectVolume": 200
+}

@@ -1,7 +1,8 @@
 // Dedicated module worker that runs the emulated console, paced to the wall clock.
 //
 // Messages in:
-//   {type:'boot', files:[[path, ArrayBuffer], ...], appPath?, audioPort?: MessagePort}
+//   {type:'boot', files:[[path, ArrayBuffer], ...], appPath?, audioPort?: MessagePort, volume?}
+//   {type:'volume', value}       set the console volume 0..255 (the page's slider)
 //   {type:'keys', mask}          os_get_keys bitmask (bit n = key n held)
 //   {type:'place', ship, antenna}  put ship 1..4 on an antenna (null = off the board)
 //   (boot also takes placements: [[ship, antenna|null], ...])
@@ -12,6 +13,7 @@
 //   {type:'file', path, ok, t}                 every fopen
 //   {type:'status', app, virtualMs, speed, halted?}  about twice a second
 //   {type:'log', text}
+//   {type:'volume', value}                     the app changed the console volume (0..255)
 //   {type:'files-changed', path, data}         a file the app wrote (fclose after fwrite)
 //   {type:'files', files:[[path, ArrayBuffer], ...]}  after shutdown (buffers transferred)
 // PCM goes straight to the AudioWorklet through audioPort as Int16Array chunks (22050 Hz mono).
@@ -32,6 +34,7 @@ let clockBase = 0;           // wall time (ms) that corresponds to virtual time 
 let lastStatus = 0, lastWall = 0, lastVirtual = 0, speed = 0;
 let pcm = [];
 let lastFb = '';
+let volume = 0;              // the console volume 0..255; kept across app restarts like the OS's saved one
 
 const post = (msg, transfer) => self.postMessage(msg, transfer ?? []);
 
@@ -41,12 +44,17 @@ self.onmessage = async ({ data }) => {
       vfs = new Vfs();
       for (const [path, buf] of data.files) vfs.add(path, new Uint8Array(buf));
       audioPort = data.audioPort ?? null;
+      volume = data.volume ?? 0;
       for (const [ship, antenna] of data.placements ?? []) board.place(board.figures[ship - 1], antenna);
       await boot(data.appPath ?? 'pirates/app.elf');
       break;
     case 'keys':
       keys = data.mask >>> 0;
       if (m) m.kuma.keys = keys;
+      break;
+    case 'volume':
+      volume = data.value;
+      m?.kuma.setVolume(volume);
       break;
     case 'place':
       board.place(board.figures[data.ship - 1], data.antenna);
@@ -66,7 +74,7 @@ async function boot(appPath) {
   clearInterval(timer);
   if (m) { m.cpu.close(); m = null; }
   try {
-    m = await Machine.create({ vfs, appPath, board, log: text => post({ type: 'log', text }) });
+    m = await Machine.create({ vfs, appPath, board, volume, log: text => post({ type: 'log', text }) });
   } catch (e) {
     // Like the real OS: if the app can't be loaded, fall back to the menu.
     post({ type: 'log', text: `cannot start ${appPath}: ${e.message}` });
@@ -79,6 +87,7 @@ async function boot(appPath) {
     const key = fb.join(',');
     if (key !== lastFb) { lastFb = key; post({ type: 'display', fb: fb.slice() }); }
   };
+  m.kuma.on.volume = v => { volume = v; post({ type: 'volume', value: v }); };
   m.kuma.on.fileOpen = (path, ok) => post({ type: 'file', path, ok, t: m.kernel.timeMs });
   m.kuma.on.fileWrite = (path, data) => post({ type: 'files-changed', path, data: data.slice() });
   m.onAudio = buf => pcm.push(buf.slice());

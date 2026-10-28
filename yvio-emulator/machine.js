@@ -65,16 +65,17 @@ export class Machine {
    * @param {(t:number, task:string, n:number, text:string) => void} [o.trace]  per-syscall trace
    * @param {number} [o.slice]  instructions per emu_start (see DEFAULT_SLICE)
    * @param {import('./board.js').Board} [o.board]  virtual board; pass the old one when rebooting
+   * @param {number} [o.volume]  the saved console volume 0..255 (pass the last one when rebooting)
    */
-  static async create({ vfs, appPath = 'pirates/app.elf', cpu, log = () => {}, trace = null, slice = DEFAULT_SLICE, board }) {
+  static async create({ vfs, appPath = 'pirates/app.elf', cpu, log = () => {}, trace = null, slice = DEFAULT_SLICE, board, volume }) {
     cpu ??= await createCpu('unicorn');
-    const m = new Machine(cpu, vfs, appPath, log, trace, board);
+    const m = new Machine(cpu, vfs, appPath, log, trace, board, volume);
     m.slice = slice;
     m.load();
     return m;
   }
 
-  constructor(cpu, vfs, appPath, log, trace, board) {
+  constructor(cpu, vfs, appPath, log, trace, board, volume) {
     this.cpu = cpu;
     this.vfs = vfs;
     this.appPath = appPath;
@@ -93,7 +94,7 @@ export class Machine {
     for (let a = SYSCALL_BASE; a < SYSCALL_END; a += 4) cpu.write32(a, ARM_BX_LR);
     for (const a of Object.values(SENTINEL)) cpu.write32(a, ARM_B_SELF);
 
-    this.kuma = new Kuma({ cpu, kernel: this.kernel, vfs, osRam: MEM.OS_RAM, appPath, board });
+    this.kuma = new Kuma({ cpu, kernel: this.kernel, vfs, osRam: MEM.OS_RAM, appPath, board, volume });
     this.kuma.on.log = log;
     this.kuma.on.audioOpen = () => this.startAudio();
     this.audioTask = null;
