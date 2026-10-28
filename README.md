@@ -4,73 +4,106 @@
 > trademarks belong to their owners. Do not open issues or pull requests that contain game files,
 > sounds, texts or pictures of the games.
 
+
+![preview](/examples/preview.png)
+
 A browser emulator for the 2008 Yvio boardgame console.
 
-This is just a basic static web page, there is no server, and **no game files are included**:
-You play locally in your browser and will need to provide your own SD-card copy containing 
-the game files (folder or `.zip`).
-You can create and add your own images of the board and console overlay for an immersive
-experience.
-All of these files will stay in your browser only; they are never uploaded.
+The emulator consists of a basic static webpage, running the game locally in your browser. There is no backend server; no data is uploaded, everything stays in your browser.
 
-It runs the game on Unicorn.js (ARM7) with a reimplemented kuma OS in JavaScript, an emulated 
-LED display, keys and sound, and a virtual RFID board for the game figures.
+**Game files and artwork are *not* included.** You will need to provide your own SD-card copy containing the game files (folder or `.zip` containing the .elf and audio files).
+
+For an immersive experience, you can **provide your own images of the board and console overlay**, which can be aligned manually in the Settings to fit the console buttons and LED screen perfectly.
+
+You can also **adjust the locations of the RFID antenna sensors** on the board via an editor, to be able to play games with different layouts. All settings can be exported and imported for convenience.
+
+See the Quickstart guide below on how to play.
 
 
-## Supported Games 
+## Technical Info
+
+The website runs the game on Unicorn.js (ARM7) with a (partially) reimplemented kuma OS in JavaScript, an virtual LED display, console buttons and sounds, and a interactive RFID board on which to move the game figures between the RF antennas.
+
+The emulator directly loads the game's .elf file and skips the default boot and OS .elf files that always comes with the SD card. This very slightly alters the behaviour compared to playing on the original console. However, the games themselves should be unaffected by this and play normally.
+
+
+## (Known) Supported Games 
 
  * Freibeuter der Karibik 1.0
  * Freibeuter der Karibik 1.1
 
-Currently, only the board game **Freibeuter der Karibik** is supported by the project. Version 1.0 and 1.1 seem to work. Version 1.1 also speaks English: choose it under **Console → Language** before Power on. Other games have not been tested yet.
+Currently, only the board game **Freibeuter der Karibik** is supported by the project. Version 1.0 and 1.1 seem to work. Version 1.1 also speaks English: choose it under **Console → Language** before clicking Power on. Other games have not been tested yet, but might also work.
 
 However, the project has already been designed in a modular and customizable way, 
 so additional game support should be easy to add in the future.
 
-You can already try the SD cards of other Yvio games: the emulator uses the game folder at the
-card root (any folder with an `app.elf` other than `emulator/`, `menu/`, `osup/` and `system/`;
-`pirates/` for Freibeuter). If a card has several, choose one under **Console → Game**. A game
-with more than one language in its `lang.txt` shows **Console → Language**; the choice is written
-into the card copy's `lang.txt` (as the game's own menu does) and applies at the next Power on.
-Whether another game runs is untested.
+Of course, you are free to already try out other games. The emulator will find the game folder at the
+card root (any folder with an `app.elf` other than `emulator/`, `menu/`, `osup/` and `system/`; e.g.
+`pirates/` for Freibeuter). If a card has several such folders, you will be able to choose one.
+
+Feel free to reach out if you are having issues or can confirm that other games also work correctly.
+
+
+
+## Supported Languages
+
+A game with more than one language in its `lang.txt` will let you select one under **Console → Language** (this is hidden if there is just one language).
+Technical note: This choice is written into the card copy's `lang.txt` (as the game's own menu does) and will be loaded on the next load already preselected.
+
+The emulator UI itself currently only comes in English. German might be supported in the future, if needed we recommend using the browser translation in the meantime.
 
 
 ## Quick Start - How to play
 
 You need your game's SD card and a card reader.
 
-0. **Preparation: Copy the SD card content:** Put the SD card into your computer and copy everything on it into a new folder,
-   e.g. `freibeuter/`. Keep the files and folders as they are. For mobile play, create a zip of the folder.
-   Only ever play with this copy; do not play from the SD card itself!
-   You will have to do this step once for each game. Once you have done this step once,
-   you can always start with step 1 right away.
+0. **Preparation: Copy the SD card content:** 
+   Put the SD card into your computer and copy everything on it into a new folder,
+   e.g. `freibeuter/`. Keep the files and folders as they are.
+   For mobile play, create a zip of the folder.
+   Create separate folders for different games.
+   Only ever play with the copy; do *not* play from the SD card itself!
+   This step has to only be done once; once for each of your games. You can then always start with step 1 right away.
+
+   ![setup_create_copy](/examples/setup01.png)
 1. **Open the emulator** at **https://un0btanium.github.io/yvio-emulator/** in your browser.
-2. **Load the game:** In the settings panel, under **Console**, click **Choose folder** and pick your SD card folder,
-   or **Choose .zip**. The browser might ask you to confirm (again: No files are actually uploaded, just loaded by the browser). Wait a few seconds. You will know it worked when it says "Loaded: … game files. Ready!".
-3. **Click Power on.** The emulated console boots and the game starts.
-4. **Play.** Controls:
-   - Press buttons on the console.
-   - Drag-and-drop game figures onto a field on the board, or tap it once and then tap the field.
-     - The game figures are initially in the **Off The Board** drawer (button in the bottom right
-     corner).
-   - Access the settings anytime via the gear button in the bottom left corner.
+2. **Load the game:** In the left panel, under **Console**, click **Choose folder** and pick your SD card folder,
+   or **Choose .zip**. The browser might ask you to confirm (again: No files are actually uploaded, just loaded by the browser).
+   Wait a few seconds. You will know it worked when it says "Loaded: … game files. Ready!".
+   
+   ![setup_load_files](/examples/setup02.png)
+3. **Click Power on.** The emulated console boots and the game starts. (If not, feel free to reach out.)
+4. **Play.** 
 
-Under **Settings** → **Figures** → **Show as**, you can select "Ships" for increased immersion.
 
-## Recommended: Add game pictures, antenna layout and settings
+**Controls:**
+- Press buttons on the console.
+- Drag-and-drop game figures onto a field on the board, or tap a figure once and then tap a field.
+  - The game figures are initially in the **Off The Board** drawer (button in the bottom right
+  corner).
+- Access the settings anytime via the gear button in the bottom left corner.
+  There are plenty of useful settings so have a look and explore them.
 
-Due to legal reasons, this project does not contain any game artwork itself, but you can provide your own for an immersive experience:
+
+If you are playing a certain game, under **Settings** → **Figures** → **Show as**, you can select "Ships" for increased immersion. Have fun ;)
+
+![figure_skins](/examples/setup03.png)
+
+
+## Recommended: Add custom artwork, antenna layout and settings
+
+Due to legal reasons, this project does not contain any game artwork itself, but you can provide your own for an immersive experience to also emulate the experience you would get from playing on the physical boardgame:
 
 | File | What it is |
 |---|---|
-| `board.png` | A photo or scan of your game's board (as `.png`, `.jpg` or `.webp`). I recommend creating photos with your phone, and using a Perspective Cropping feature to just export the board. Do two photos of each half of the board and stitch them together as one final photo (e.g. in Paint). |
-| `console_overlay.png` | A photo of the overlay sheet that lies on top of the game console. You can adjust its position in the Settings to fit exactly onto the console's buttons and LEDs. I recommend exporting the Settings once you managed to fit it perfectly (see below), so you have to only do it once. |
-| `board-antennas.json` | Defines where the RF antennas sit on your board: Use the **Editor** under **Board & Pictures** (PC only), which also allows you to export them to a file. |
-| `settings.json` | Your settings. Your current settings can be downloaded and saved at the top of the Settings section ([see example](examples/settings-default.json)) |
+| `board.png` | A photo or scan of your game's board (as `.png`, `.jpg` or `.webp`). I recommend creating photos with your phone, and using a Perspective Cropping feature to just export the board. For higher resolution, you can take two photos, one of each half of the board and stitch them together as one final photo (e.g. in Paint). This should be an quadratic image with pixel size of multiples of 2, e.g. 1024x1024, 2048x2048. |
+| `console_overlay.png` | A photo of the overlay sheet that lies on top of the game console. Once added, you can adjust its position in the Settings to fit exactly onto the console's buttons and LEDs. I recommend exporting the Settings once you managed to fit it perfectly (see below), so you can load these settings later and have to only align it once. |
+| `board-antennas.json` | Defines where the RF antennas sensors sit on your board: Use the **Editor** under **Board & Pictures** (PC only) to define their locations, then export them to file. Different games have different antenna layouts. This is easier to do once you uploaded a board.png first. |
+| `settings.json` | The settings can be saved and loaded at the top of the Settings section ([see example](examples/settings-default.json)) |
 
-There are two ways to load them:
+There are two ways to load these files:
 - **Load them individually** in the Settings under **Board & Pictures** and **Settings → Load…**.
-- **Recommended: Automatically loaded with your SD game card** by adding the files in a folder `emulator/` inside your SD card folder, e.g. `freibeuter/emulator/board.png`. They will then be loaded together with the game every time. Each game (card SD folder) can come with its own files.
+- **Recommended: Automatically load them together with your SD game card** by adding the files in a new folder `emulator/` inside your SD card folder, e.g. `freibeuter/emulator/board.png`. They will then be loaded together with the game every time. Each game (card SD folder) can come with its own files.
   ```
   freibeuter/
     pirates/  system/  …        (the game, unchanged)
@@ -78,7 +111,8 @@ There are two ways to load them:
       board.png  console_overlay.png  board-antennas.json  settings.json
   ```
 
-Each file is optional. None of these files are uploaded, they stay in your browser.
+Each file is optional. None of these files are uploaded anywhere, they stay in your browser.
+
 
 # Development
 
@@ -112,8 +146,7 @@ python3 -m http.server 8000     # then open http://localhost:8000/
 - `vendor/unicorn/` — Unicorn.js v2.1.4 ARM build (GPL-2.0), see `vendor/unicorn/README.md`.
 
 ## Features
-- `index.html` is one clean view: the board fills the screen and the console stands on the
-  whirlpool in its middle, as on the real game.
+- `index.html` is one clean view: the board fills the screen and the console stands in its middle, as on the real game board.
   - **Settings** (gear, bottom left) open on load as a panel left of the board (above it in
     portrait), so changes to the console size or overlay show at once. Sections: **Console** (load
     the card, **Power on** / Power off, pause (below the drop box one line: "Loaded: N game files, M emulator files. Ready!" after
