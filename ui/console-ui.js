@@ -18,8 +18,8 @@ export const store = {
 // triangle: yellow at the corner pointing to the display, green to its right, red to its left.
 const RING_RADIUS = 40;            // % of the device size
 const KEY_HINT = { 6: 'OK', 7: 'skip', 8: '↻' };
-/** Framebuffer channel bit (fb[2k] bit 4 + c) -> LED colour. Channel 0 marks the active key;
- *  that it is the yellow one is a guess, as is green = 1, red = 2. */
+/** Framebuffer channel bit (fb[2k] bit 4 + c) -> LED colour: 0 yellow (marks the active key), 1 green,
+ *  2 red, confirmed on real hardware. */
 const LED_OF_CHANNEL = ['y', 'g', 'r'];
 
 /**
