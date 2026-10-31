@@ -17,12 +17,7 @@ For an immersive experience, you can **provide your own images of the board and 
 
 You can also **adjust the locations of the RFID antenna sensors** on the board via an editor, to be able to play games with different layouts. All settings can be exported and imported for convenience.
 
-See the Quickstart guide below on how to play.
-
-
-## Technical Info
-
-The website runs the game on Unicorn.js (ARM7) with a (partially) reimplemented kuma OS in JavaScript, an virtual LED display, console buttons and audio output, and a interactive RFID board on which to move the game figures between the virtual RF antennas.
+See the Quickstart guide below on how to play and add custom gameart.
 
 
 ## (Known) Supported Games 
@@ -30,30 +25,17 @@ The website runs the game on Unicorn.js (ARM7) with a (partially) reimplemented 
  * Freibeuter der Karibik 1.0
  * Freibeuter der Karibik 1.1
 
-Currently, only the board game **Freibeuter der Karibik** is supported by the project. Version 1.0 and 1.1 seem to work. Version 1.1 also speaks English: choose it under **Console → Language** before clicking Power on. Other games have not been tested yet, but might also work.
+Currently, only the board game **Freibeuter der Karibik** is supported by the project. Version 1.0 and 1.1 seem to work. Version 1.1 also comes with English audio: choose it under **Console → Language** before clicking Power on.
 
-However, the project has already been designed in a modular and customizable way, 
-so additional game support should be easy to add in the future.
-
-Of course, you are free to already try out other games. The emulator will find the game folder at the
-card root (any folder with an `app.elf` other than `emulator/`, `menu/`, `osup/` and `system/`; e.g.
-`pirates/` for Freibeuter). If a card has several such folders, you will be able to choose one.
-
-By default, this emulator boots directly into the game instead of the console menu. This is slightly different behaviour compared to playing on the original console. However, under **Settings → Console → Boot from** you can let it boot to the **console menu** (the card's root
-`app.elf`), just like the real console does: it plays its boot animation and then
-starts the game itself. For this purpose the console's OS keys are shown while the menu runs; it lets you choose between different languages and games first if there are more than one (select with the Volume buttons, confirm with the Menu button). The menu text will be in German unless the card has its own `lang.txt` at the root.
-
-Like on the real console, every game is different: the console's random numbers start from a new random seed at every power on. You can see it under **Settings → Game → Game Seed**. To play a game again with the same luck, type its seed there before powering on and make the same moves. The seed is not part of the saved settings; clear the field to get random seeds again.
-
-Feel free to reach out if you are having issues or can confirm that other games also work correctly.
+Other games have not been tested yet, but might also work. Feel free to try them and report back if anything is missing or not working.
 
 
 ## Supported Languages
 
-A game with more than one language in its `lang.txt` will let you select one under **Console → Language** (this will be hidden if there is just one language). When booting from the console menu, the Game and Language choices are hidden: the menu lets you choose the game and its own language, and the games' menus their language.
-Technical note: This choice is written into the card copy's `lang.txt` (as the game's own menu does) and will be loaded on the next load already preselected.
-
 The emulator UI itself currently only comes in English. German might be supported in the future, if needed we recommend using the browser translation in the meantime.
+
+The emulator having loaded a game with more than one language in its `lang.txt` will let you select one under **Console → Language** dropdown menu (hidden if just one language is available).
+
 
 
 ## Quick Start - How to play
@@ -90,18 +72,16 @@ You need your game's SD card and a card reader.
 
 If you are playing a certain game, under **Settings** → **Game** → **Figures Skin**, you can select "Ships" for increased immersion. Have fun ;)
 
-![figure_skins](/examples/setup03.png)
 
+### Recommended: Add custom artwork, antenna layout and settings
 
-## Recommended: Add custom artwork, antenna layout and settings
-
-Due to legal reasons, this project does not contain any game artwork itself, but you can provide your own for an immersive experience to also emulate the experience you would get from playing on the physical boardgame:
+Due to legal constraints, this project does not contain any game artwork itself, but you can provide your own for an immersive experience to also emulate the experience you would get from playing on the physical boardgame:
 
 | File | What it is |
 |---|---|
-| `board.png` | A photo or scan of your game's board (as `.png`, `.jpg` or `.webp`). I recommend creating photos with your phone, and using a Perspective Cropping feature to just export the board. For higher resolution, you can take two photos, one of each half of the board and stitch them together as one final photo (e.g. in Paint). This should be an quadratic image with pixel size of multiples of 2, e.g. 1024x1024, 2048x2048. |
-| `console_overlay.png` | A photo of the overlay sheet that lies on top of the game console. Once added, you can adjust its position in the Settings to fit exactly onto the console's buttons and LEDs. I recommend exporting the Settings once you managed to fit it perfectly (see below), so you can load these settings later and have to only align it once. |
-| `board-antennas.json` | Defines where the RF antennas sensors sit on your board: Use the **Editor** under **Board & Pictures** (PC only) to define their locations, then export them to file. Different games have different antenna layouts. This is easier to do once you uploaded a board.png first. |
+| `board.png` | A photo or scan of your game's board (as `.png`, `.jpg` or `.webp`). I recommend creating photos with your phone, and using a Perspective Cropping editing feature to just export the board. For higher resolution, you can take two photos, one of each half of the board and stitch them together as one final photo (e.g. in Paint). This should be an quadratic image with pixel size of multiples of 2, e.g. 1024x1024, 2048x2048. |
+| `console_overlay.png` | A photo of the overlay sheet that lies on top of the game console. Once added, you can adjust its position in the Settings to fit exactly onto the console's buttons and LEDs. I recommend exporting the Settings once you managed to fit it perfectly (see below), so you can load these settings later and have to do the aligning only once. |
+| `board-antennas.json` | Defines where the RF antennas sensors sit on your board which differs from game to game: Use the **Editor** under **Board & Pictures** (PC only) to define their locations, then export them to file. Different games have different antenna layouts. This is easier to do once you uploaded a board.png first as visual reference. |
 | `settings.json` | The settings can be saved and loaded at the top of the Settings section ([see example](examples/settings-default.json)) |
 
 There are two ways to load these files:
@@ -119,7 +99,29 @@ Each file is optional. None of these files are uploaded anywhere, they stay in y
 
 # Development
 
-This project was mostly vibe-coded with Claude.
+This project was mostly vibe-coded with Claude (Opus 5.5). Beware of the strange/non-existant code style.
+
+
+## Technical Info
+
+The website runs the game on Unicorn.js (ARM7) with a (partially) reimplemented kuma OS in JavaScript, an virtual LED display, console buttons and audio output, and a interactive RFID board on which to move the game figures between the virtual RF antennas.
+
+
+## Differences & Similarities between emulator and real console
+
+By default, this emulator boots directly into the game instead of the console menu. The emulator will try to find the game folder at the
+card root (any folder with an `app.elf` other than `emulator/`, `menu/`, `osup/` and `system/`; e.g.
+`pirates/` for Freibeuter). If a card has several such folders, you will be able to choose one from a dropdown menu.
+
+This is slightly different behaviour compared to playing on the original console. However, under **Settings → Console → Boot from** you can let it boot to the **console menu** (the card's root
+`app.elf`), just like the real console does: it plays its boot animation and then
+starts the game itself; or lets you select from one of multiple games from a menu. For this purpose the console's OS keys are shown while the menu runs; it lets you choose between different languages and games first if there are more than one (select with the Volume buttons, and confirm with the Menu button). The menu text will be in German unless the card has its own `lang.txt` at the root. In that case you can also select a menu language.
+
+Like on the real console, every game is different: the console's random numbers start from a new random seed at every power on. This too is emulated. You can see it under **Settings → Game → Game Seed**. To play a game again with the same luck/random numbers, type its seed there before powering on and make the same moves. The seed is not part of the saved settings; clear the field to get random seeds again.
+
+When booting from the console menu instead of the game directly, the emulator's Game and Language dropdowns are hidden: the console menu lets you choose the game and language.
+Technical note: This choice is written by the emulator into the card copy's `lang.txt` and will be loaded on the next load already preselected, just like the real console and game.
+
 
 ## Run locally
 
