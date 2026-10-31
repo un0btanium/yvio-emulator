@@ -1,6 +1,7 @@
 {
   "description": "Version 1.1, control for v1.1_pvp_flee_steals: the same game, but key 5 at the ship on the horizon avoids the fight. In Camarco both ships are paid 300 for their load of Grain (of1_300, of2_300). The RNG then draws differently, so the quest offers differ (refused with key 5)",
   "cards": ["freibeuter-der-karibik/original-v1.1"],
+  "seed": 0,
   "timeoutMs": 300000,
   "steps": [
     {"afterFile": "sounds/intro\\.wav$", "delay": 500, "key": 7},

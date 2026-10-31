@@ -127,6 +127,7 @@ h3 { font-size: .9rem; margin: 16px 0 6px; color: var(--muted); }
 .check { display: flex; gap: 6px; align-items: center; }
 .views { display: grid; gap: 6px; margin: 8px 0; }
 select { font: inherit; color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; }
+#game-seed { font: inherit; color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; width: 7em; }
 /* no accidental text selection; the log and announcements can still be copied */
 body { user-select: none; -webkit-user-select: none; }
 .log, input, select { user-select: text; -webkit-user-select: text; }

@@ -8,6 +8,8 @@
 // drawer onto Grain and the green ship onto Rum and checks that the game announces two players.
 // Then it shows the OS keys and presses volume + (14): the Audio volume slider must follow.
 // Finally it powers the console off and on again and checks that it boots once more.
+// Game Seed: the first boot uses the random seed shown at page load, the next power on rolls a new one,
+// and a typed seed (42) is used for two power ons in a row.
 // With --extras the card must bring emulator/board.png, console_overlay.png and board-antennas.json;
 // with --card-settings also emulator/settings.json.
 // With --language CODE the card must offer a Language choice; the test picks CODE before power on and
@@ -128,6 +130,10 @@ if (language) {
   await ev(`(s => { s.value = ${JSON.stringify(language)}; s.dispatchEvent(new Event('change')); return 1; })(document.getElementById('language'))`);
 } else console.log(`     language choice: ${await ev("document.getElementById('language-row').hidden") ? 'hidden' : 'shown'} (${languages || 'no lang.txt'})`);
 const fromLanguage = () => (language ? ev(`[...document.querySelectorAll('#sounds li')].filter(l => /p\\d{4}\\.wav/.test(l.textContent)).every(l => l.title.includes('/${language}/'))`) : true);
+// the seed of each boot, from the worker's "started APP (seed N)" log lines
+const bootSeeds = () => ev("[...document.getElementById('log').textContent.matchAll(/started \\S+ \\(seed (\\d+)\\)/g)].map(m => Number(m[1]))");
+const seedField = () => ev("Number(document.getElementById('game-seed').value)");
+const seed0 = await seedField();
 await ev("document.getElementById('power').click(), 1");
 if (menuBoot) {
   // the console menu: boot animation with ticks and the OS keys, then it starts the game itself
@@ -137,6 +143,7 @@ if (menuBoot) {
   check(await waitFor("document.getElementById('os-keys').hidden === !document.getElementById('view-os-keys').checked"), 'OS keys as set once the game runs');
 }
 check(await waitFor("[...document.querySelectorAll('#sounds li')].some(l => /intro\\.wav/.test(l.textContent))"), 'intro.wav plays');
+check((await bootSeeds())[0] === seed0, `the first boot uses the seed shown at page load (${seed0}; log: ${await bootSeeds()})`);
 check(await ev("document.getElementById('language').disabled"), 'language choice locked while powered on');
 check(await waitFor("document.getElementById('load-status').textContent === 'Playing…'", 5000) && !await ev("document.getElementById('settings').hidden"), 'status: Playing… (no load info), settings stay open');
 await ev("document.getElementById('pause').click(), 1");
@@ -208,8 +215,21 @@ await ev("document.getElementById('power').click(), 1");
 check(await waitFor("document.getElementById('log').textContent.includes('powered off') && !document.getElementById('power').disabled"), 'power off hands the card back');
 check(await waitFor("document.getElementById('load-status').textContent === 'Ready!'", 5000), `status after power off: ${await loadStatus()}`);
 if (language) check(await ev(`!document.getElementById('language').disabled && document.getElementById('language').value === ${JSON.stringify(language)}`), `language still ${language} after power off`);
+const booted = (await bootSeeds()).length;
 await ev("document.getElementById('power').click(), 1");
 check(await waitFor(`[...document.querySelectorAll('#sounds li')].filter(l => /intro\\.wav/.test(l.textContent)).length > ${before}`), 'power on boots again (intro.wav)');
+const seed1 = (await bootSeeds())[booted];
+check(seed1 === await seedField() && seed1 !== seed0, `power on rolls a new seed (${seed0} → ${seed1}, field ${await seedField()})`);
+// a typed seed is kept: two power ons with 42
+for (const round of [1, 2]) {
+  await ev("document.getElementById('power').click(), 1");
+  check(await waitFor("document.getElementById('log').textContent.split('powered off').length > " + (round + 1) + " && !document.getElementById('power').disabled"), `power off (seed round ${round})`);
+  if (round === 1) await ev("(i => { i.value = '42'; i.dispatchEvent(new Event('input')); return 1; })(document.getElementById('game-seed'))");
+  const n = (await bootSeeds()).length;
+  await ev("document.getElementById('power').click(), 1");
+  check(await waitFor(`[...document.getElementById('log').textContent.matchAll(/started \\S+ \\(seed (\\d+)\\)/g)].length > ${n}`, 10000)
+    && (await bootSeeds())[n] === 42 && await seedField() === 42, `power on ${round} with the typed seed 42 (log: ${(await bootSeeds())[n]})`);
+}
 if (language) check(await fromLanguage(), `all announcements from sounds/${language}/`);
 console.log('status:', await ev("document.querySelector('.stats').innerText.replace(/\\n/g, ' | ')"));
 console.log('announcements:\n' + await sounds());

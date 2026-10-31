@@ -209,6 +209,25 @@ $('boot-from').addEventListener('change', () => {
   store.set('boot-from', $('boot-from').value);
   if (vfs) showGames(vfs.games());
 });
+// Game Seed: the os_rand seed of a boot (the real OS takes a random 16-bit value from its PSoC).
+// Not a settings-file entry and not stored: a new random one at every Power on, unless the player
+// typed one in (kept until the field is cleared). os_exec reboots derive theirs from it (worker.js).
+const SEED_MAX = 0xffff;
+let seedTyped = false, seedFresh = true; // fresh: the random seed rolled at page load, not used yet
+const randomSeed = () => crypto.getRandomValues(new Uint16Array(1))[0];
+$('game-seed').value = String(randomSeed());
+$('game-seed').addEventListener('input', () => { seedTyped = $('game-seed').value.trim() !== ''; });
+/** The seed for this Power on (shown in the field). */
+function bootSeed() {
+  const v = Number($('game-seed').value);
+  const fresh = seedFresh;
+  seedFresh = false;
+  if ((seedTyped || fresh) && Number.isInteger(v) && v >= 0 && v <= SEED_MAX) return v;
+  seedTyped = false;
+  const s = randomSeed();
+  $('game-seed').value = String(s);
+  return s;
+}
 /** Booting the console menu: chosen, and the card has one. */
 const menuBoot = () => $('boot-from').value === 'menu' && !!vfs?.has('app.elf');
 function setUnused() {
@@ -550,7 +569,7 @@ async function powerOn() {
   }
   if (audioPort) transfer.push(audioPort);
   worker.postMessage({ type: 'boot', files, appPath, audioPort, placements: board.placements(),
-    volume: toConsoleVolume(Number($('volume').value)) }, transfer);
+    volume: toConsoleVolume(Number($('volume').value)), seed: bootSeed() }, transfer);
   vfs = null; // the buffers now belong to the worker; power off hands them back
 
   paused = false;

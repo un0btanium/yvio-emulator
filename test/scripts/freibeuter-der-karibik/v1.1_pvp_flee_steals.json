@@ -1,6 +1,7 @@
 {
   "description": "Version 1.1, normal game, two players: the 1.1 bug that sailing away in a player-against-player battle always takes the other ship's cargo. Blue and green load Wood in San Juan (antenna 4) and sail to Prinzapolca (12), arriving on day 69. Both are paid 500, load Grain (17) there and set Camarco (18). Green sets out after day 50 towards the same port as blue, so the ships meet (p0307, key 6 fights). With the emulator's seed blue attacks; key 11 sails away, and the flight succeeds (of1btesc, of1pvp4). In Camarco blue is paid 600 (of1_600), twice the 300 that one load pays (v1.1_pvp_avoid) and green's goods are gone (of2_001, say_goods_lost)",
   "cards": ["freibeuter-der-karibik/original-v1.1"],
+  "seed": 0,
   "timeoutMs": 300000,
   "steps": [
     {"afterFile": "sounds/intro\\.wav$", "delay": 500, "key": 7},

@@ -1,6 +1,7 @@
 {
   "description": "Version 1.0, control for v1.1_pvp_flee_steals: the same keys on 1.0 (trips take dist / sail + 6 days, arrival in Prinzapolca on day 63). The ships meet the same way; with the emulator's seed green attacks here, and key 11 sails away (of2btesc, of2pvp4). No cargo moves: in Camarco green and blue are each paid 300 for their own load of Grain (of2_300, of1_300)",
   "cards": ["freibeuter-der-karibik/original"],
+  "seed": 0,
   "timeoutMs": 300000,
   "steps": [
     {"afterFile": "sounds/intro\\.wav$", "delay": 500, "key": 7},

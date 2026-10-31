@@ -15,6 +15,9 @@ script.
   language, same format as a game's), selected before boot (`--menu-language`).
 - `volume`: optional, the console volume 0..255 the OS has saved (the page passes its Audio volume
   slider, 80 % = 204); default 0 = none saved, then the apps set 200 at their first sound (`--volume`).
+- `seed`: optional, the `os_rand` seed of the boot, 0..65535 (`--seed`, which wins). Default 0. The
+  real OS seeds it at every boot with a random value; a script with the same seed and steps plays
+  the same game every time. `os_exec` reboots derive the next seed from it, as the page does.
 - `expectVolume`: optional, the console volume when the script ends (keys 13/14 change it by 4).
 - `expectLanguage`: optional, `{"FOLDER": "code"}`: the language selected in `FOLDER/lang.txt` when
   the script ends (`""` = the card root), e.g. after choosing one in a menu.

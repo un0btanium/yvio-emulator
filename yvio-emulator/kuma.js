@@ -10,6 +10,16 @@ const EINVAL = 0xffffffea | 0; // -22, used by the file/audio calls
 const FILE_SLOTS = 16, FILE_SIZE = 0x50, DIR_SLOTS = 4, DIR_SIZE = 0x34;
 const AUDIO_MAGIC = 0x5622;
 const RAND_A = 0x41c64e6d, RAND_C = 0x3039;
+/** Highest seed: the real OS seeds os_rand once per boot with a 16-bit random value from its PSoC. */
+export const SEED_MAX = 0xffff;
+/**
+ * The seed for the next boot after an os_exec or restart (the real console soft-resets and
+ * probably asks the PSoC again). Derived from the last seed, so a whole run stays reproducible:
+ * os_rand's step on 16 bits (the low halves of RAND_A/RAND_C), which runs through all 65536 seeds.
+ */
+export function nextBootSeed(seed) {
+  return (Math.imul(seed & SEED_MAX, RAND_A & SEED_MAX) + RAND_C) & SEED_MAX;
+}
 // The menu and the games change the volume by ±4 of 255 per Vol −/+ key press
 // (audio_set_volume(0, audio_get_param(0) ± 4)). On the page's linear volume that is about 1.5 %
 // and can't be heard, so the emulator's OS widens such a step to ±16 (about 6 %).
@@ -41,8 +51,9 @@ export class Kuma {
    * @param {Board} [o.board]  the virtual board (kept across app restarts)
    * @param {number} [o.volume]  the saved volume 0..255 (the OS keeps it across resets; 0 = none,
    *   then the apps set 200 at their first sound)
+   * @param {number} [o.seed]  the os_rand seed of this boot, 0..SEED_MAX (the real OS's PSoC value)
    */
-  constructor({ cpu, kernel, vfs, osRam, appPath, board = new Board(), volume = 0 }) {
+  constructor({ cpu, kernel, vfs, osRam, appPath, board = new Board(), volume = 0, seed = 0 }) {
     this.cpu = cpu;
     this.kernel = kernel;
     this.vfs = vfs;
@@ -50,7 +61,7 @@ export class Kuma {
     this.board = board;
     this.keys = 0;                   // os_get_keys bitmask
     this.display = new Uint8Array(24);
-    this.randState = 0;
+    this.randState = seed >>> 0;
     this.audio = null;               // {fmt:number[], callback, userPtr} after audio_open
     // OS.elf sys40/sys39: left/right volume 0..255, the channel 3 value, and the saved volume
     // (L + R) / 2 that audio_get_param(0) returns

@@ -66,16 +66,17 @@ export class Machine {
    * @param {number} [o.slice]  instructions per emu_start (see DEFAULT_SLICE)
    * @param {import('./board.js').Board} [o.board]  virtual board; pass the old one when rebooting
    * @param {number} [o.volume]  the saved console volume 0..255 (pass the last one when rebooting)
+   * @param {number} [o.seed]  the os_rand seed of this boot (see Kuma)
    */
-  static async create({ vfs, appPath = 'pirates/app.elf', cpu, log = () => {}, trace = null, slice = DEFAULT_SLICE, board, volume }) {
+  static async create({ vfs, appPath = 'pirates/app.elf', cpu, log = () => {}, trace = null, slice = DEFAULT_SLICE, board, volume, seed }) {
     cpu ??= await createCpu('unicorn');
-    const m = new Machine(cpu, vfs, appPath, log, trace, board, volume);
+    const m = new Machine(cpu, vfs, appPath, log, trace, board, volume, seed);
     m.slice = slice;
     m.load();
     return m;
   }
 
-  constructor(cpu, vfs, appPath, log, trace, board, volume) {
+  constructor(cpu, vfs, appPath, log, trace, board, volume, seed) {
     this.cpu = cpu;
     this.vfs = vfs;
     this.appPath = appPath;
@@ -94,7 +95,7 @@ export class Machine {
     for (let a = SYSCALL_BASE; a < SYSCALL_END; a += 4) cpu.write32(a, ARM_BX_LR);
     for (const a of Object.values(SENTINEL)) cpu.write32(a, ARM_B_SELF);
 
-    this.kuma = new Kuma({ cpu, kernel: this.kernel, vfs, osRam: MEM.OS_RAM, appPath, board, volume });
+    this.kuma = new Kuma({ cpu, kernel: this.kernel, vfs, osRam: MEM.OS_RAM, appPath, board, volume, seed });
     this.kuma.on.log = log;
     this.kuma.on.audioOpen = () => this.startAudio();
     this.audioTask = null;

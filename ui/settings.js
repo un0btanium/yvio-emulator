@@ -33,6 +33,8 @@ export const SETTINGS = [
   { section: 'Additional Overlays & Views', label: 'Console Button Ids', key: 'view-key-ids', type: 'bool', default: false },
   { section: 'Fullscreen', label: 'Keep the screen awake while playing', key: 'wake-lock', type: 'bool', default: true },
 ];
+// Not here on purpose: Game Seed (#game-seed). It is random at every Power on, so it is neither saved
+// in the settings file nor stored (ui/app.js).
 const BY_KEY = new Map(SETTINGS.map(s => [s.key, s]));
 
 /** @param {string} key */

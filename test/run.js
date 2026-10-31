@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Headless runner for the emulator core (yvio-emulator/*).
-//   node test/run.js [--card DIR]... [--app PATH] [--language CODE] [--trace] [--quiet-time] [--until-wav] [--ms N] [--wav OUT] [--slice N] [--display] [--press MS:KEY[:HOLD],...] [--follow-exec] [--menu-language CODE] [--volume N] [--log-calls SPEC]
+//   node test/run.js [--card DIR]... [--app PATH] [--language CODE] [--trace] [--quiet-time] [--until-wav] [--ms N] [--wav OUT] [--slice N] [--display] [--press MS:KEY[:HOLD],...] [--follow-exec] [--menu-language CODE] [--volume N] [--seed N] [--log-calls SPEC]
 //   node test/run.js test/scripts/GAME/NAME.json [options]   run a test script (see test/scripts/README.md); exit 1 on failure
 // --card may repeat; later cards override files of earlier ones. Without --card it uses cards/freibeuter-der-karibik/original
 // (cards/ is git-ignored: put or link your own SD-card copies there as cards/GAME/VERSION/;
@@ -9,6 +9,9 @@
 // (script: "menuLanguage") selects one of the card root's lang.txt, the console menu's language.
 // --volume (script: "volume") is the console volume 0..255 the OS has saved (default 0: none, the
 // apps then set 200); it carries over os_exec reboots.
+// --seed (script: "seed") is the os_rand seed of the boot, 0..65535 (default 0; the real OS takes a
+// random one from its PSoC). The same seed and inputs play the same game; os_exec reboots derive the
+// next seed from it (nextBootSeed), as the page does.
 // --follow-exec (script: "followExec": true) reboots into the app an os_exec names, as the page
 // does (e.g. the console menu app.elf starting PIRATES/app.elf); times then run on across reboots.
 // --log-calls ADDR[:FMT][=LABEL],... (or @FILE with one such entry per line, # comments) prints a line
@@ -19,11 +22,12 @@ import { performance } from 'node:perf_hooks';
 import { vfsFromDirs } from './node-files.js';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { Machine, AUDIO_RATE } from '../yvio-emulator/machine.js';
+import { nextBootSeed, SEED_MAX } from '../yvio-emulator/kuma.js';
 import { createCpu } from '../yvio-emulator/cpu.js';
 import { toAscii } from '../yvio-emulator/display.js';
 
 const args = process.argv.slice(2);
-const opt = { cards: [], app: 'pirates/app.elf', trace: false, quietTime: false, untilWav: false, ms: 10000, wav: null, slice: undefined, display: false, presses: [], files: false, language: null, followExec: false, menuLanguage: null, volume: undefined, logCalls: [] };
+const opt = { cards: [], app: 'pirates/app.elf', trace: false, quietTime: false, untilWav: false, ms: 10000, wav: null, slice: undefined, display: false, presses: [], files: false, language: null, followExec: false, menuLanguage: null, volume: undefined, seed: undefined, logCalls: [] };
 for (let i = 0; i < args.length; i++) {
   const a = args[i];
   if (a === '--card') opt.cards.push(args[++i]);
@@ -40,6 +44,7 @@ for (let i = 0; i < args.length; i++) {
   else if (a === '--follow-exec') opt.followExec = true;
   else if (a === '--menu-language') opt.menuLanguage = args[++i];
   else if (a === '--volume') opt.volume = Number(args[++i]);
+  else if (a === '--seed') opt.seed = Number(args[++i]);
   else if (a === '--log-calls') opt.logCalls.push(...parseLogCalls(args[++i]));
   else if (a === '--press') opt.presses = args[++i].split(',').map(p => { const [at, key, hold = 150] = p.split(':').map(Number); return { at, key, hold }; });
   else if (!a.startsWith('--') && a.endsWith('.json')) opt.script = JSON.parse(readFileSync(a, 'utf8'));
@@ -75,11 +80,15 @@ if (script) {
   if (script.followExec) opt.followExec = true;
   if (script.menuLanguage) opt.menuLanguage ??= script.menuLanguage;
   if (script.volume !== undefined) opt.volume ??= script.volume;
+  if (script.seed !== undefined) opt.seed ??= script.seed;
   opt.ms = script.timeoutMs ?? 120000;
   opt.files = opt.files || !!script.verbose;
   console.log(`script: ${script.description ?? '(no description)'}`);
 }
 if (!opt.cards.length) opt.cards.push(cardsDir + 'freibeuter-der-karibik/original');
+opt.seed ??= 0;
+if (!Number.isInteger(opt.seed) || opt.seed < 0 || opt.seed > SEED_MAX) { console.error(`--seed must be an integer 0..${SEED_MAX}`); process.exit(2); }
+console.log(`seed: ${opt.seed}`);
 
 const t0 = performance.now();
 let cpu = await createCpu('unicorn');
@@ -102,9 +111,9 @@ let lastFrame = '';
 let m, base = 0; // base: virtual ms of the machines before the last os_exec
 const clock = () => base + m.kernel.timeMs;
 /** Boot `appPath` (again after an os_exec, keeping the board) and hook up the tracing. */
-async function start(appPath, board, volume = opt.volume) {
+async function start(appPath, board, volume = opt.volume, seed = opt.seed) {
   m = await Machine.create({
-    vfs, appPath, cpu, slice: opt.slice, board, volume,
+    vfs, appPath, cpu, slice: opt.slice, board, volume, seed,
     log: line => console.log(`[log] ${line}`),
     trace: (t, task, n, text) => {
       const line = `[${t.toFixed(3).padStart(10)} ms] ${task.padEnd(16)} ${text}`;
@@ -183,10 +192,11 @@ while (true) {
   result = m.runFor(10);
   const exec = m.kuma.exitRequest;
   if (result === 'halted' && opt.followExec && exec?.kind === 'exec') {
-    console.log(`[exec @ ${clock().toFixed(0)} ms] ${exec.path || 'app.elf'}`);
+    console.log(`[exec @ ${clock().toFixed(0)} ms] ${exec.path || 'app.elf'} (seed ${nextBootSeed(opt.seed)})`);
     base = clock();
     m.cpu.close();
     cpu = await createCpu('unicorn');
+    opt.seed = nextBootSeed(opt.seed);
     await start(exec.path || 'app.elf', m.kuma.board, m.kuma.volume.saved);
     continue;
   }

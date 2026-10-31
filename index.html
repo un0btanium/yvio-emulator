@@ -110,6 +110,10 @@
         <label>Console size <input type="range" id="console-size" min="25" max="45" step="0.5" value="33"></label>
       </div>
       <label class="check"><input type="checkbox" id="view-os-keys"> Show OS keys</label>
+      <h3>Game</h3>
+      <!-- not a settings-file entry: a new random seed at every Power on, unless one is typed in -->
+      <label class="check">Game Seed <input type="number" id="game-seed" autocomplete="off" min="0" max="65535" step="1" inputmode="numeric"></label>
+      <p class="muted small">Random at every power on, like the console. Type a number (0–65535) to play the same game again with the same moves; clear the field for random seeds again.</p>
       <!-- shown once an overlay picture is loaded -->
       <div id="overlay-adjust" hidden>
         <h3>Console Overlay</h3>

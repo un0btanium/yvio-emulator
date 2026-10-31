@@ -43,6 +43,8 @@ By default, this emulator boots directly into the game instead of the console me
 `app.elf`), just like the real console does: it plays its boot animation and then
 starts the game itself. For this purpose the console's OS keys are shown while the menu runs; it lets you choose between different languages and games first if there are more than one (select with the Volume buttons, confirm with the Menu button). The menu text will be in German unless the card has its own `lang.txt` at the root.
 
+Like on the real console, every game is different: the console's random numbers start from a new random seed at every power on. You can see it under **Settings → Game → Game Seed**. To play a game again with the same luck, type its seed there before powering on and make the same moves. The seed is not part of the saved settings; clear the field to get random seeds again.
+
 Feel free to reach out if you are having issues or can confirm that other games also work correctly.
 
 

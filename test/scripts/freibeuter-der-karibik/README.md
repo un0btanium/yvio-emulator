@@ -61,8 +61,9 @@ folder in them doesn't matter here.
     ("ship on the horizon", `p0307` … `p0401`). Key 6 fights, key 5 avoids the fight.
   - The game draws who attacks. The attacker chooses 9 (fire), 10 (board) or 11 (sail away) at `ofNbtop1`.
   - Other prompts on the way: equipment offers (`p0095`, key 5) and quest offers (key 5, or 6 for a won game of chance).
-  - The emulator's random numbers start from the same seed in every run, so each script plays the same game every time.
-    A different choice in the battle changes the later draws, and with them the quest offers and who arrives first.
+  - The scripts set `"seed": 0` (the random numbers' start), so each one plays the same game every time. Another seed
+    gives another game (turn order, quests, who attacks) and needs other steps. A different choice in the battle also
+    changes the later draws, and with them the quest offers and who arrives first.
   - `v1.1_pvp_flee_steals.json`: blue attacks and sails away, and the flight succeeds (`of1btesc`, `of1pvp4`).
     In Camarco blue is paid 600 (`of1_600`) and green's goods are gone (`of2_001`): in 1.1 a flight takes the other ship's cargo.
   - `v1.1_pvp_avoid.json`: key 5 avoids the fight. Both ships are paid 300 (`of1_300`, `of2_300`).

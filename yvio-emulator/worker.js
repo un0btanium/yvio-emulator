@@ -20,6 +20,7 @@
 
 import { Vfs } from './files.js';
 import { Machine } from './machine.js';
+import { nextBootSeed } from './kuma.js';
 import { Board } from './board.js';
 
 const TICK_MS = 10;          // scheduling interval
@@ -35,6 +36,7 @@ let lastStatus = 0, lastWall = 0, lastVirtual = 0, speed = 0;
 let pcm = [];
 let lastFb = '';
 let volume = 0;              // the console volume 0..255; kept across app restarts like the OS's saved one
+let seed = 0;                // the os_rand seed of the current boot (the page picks it at power on)
 
 const post = (msg, transfer) => self.postMessage(msg, transfer ?? []);
 
@@ -45,6 +47,7 @@ self.onmessage = async ({ data }) => {
       for (const [path, buf] of data.files) vfs.add(path, new Uint8Array(buf));
       audioPort = data.audioPort ?? null;
       volume = data.volume ?? 0;
+      seed = data.seed ?? 0;
       for (const [ship, antenna] of data.placements ?? []) board.place(board.figures[ship - 1], antenna);
       await boot(data.appPath ?? 'pirates/app.elf');
       break;
@@ -74,7 +77,7 @@ async function boot(appPath) {
   clearInterval(timer);
   if (m) { m.cpu.close(); m = null; }
   try {
-    m = await Machine.create({ vfs, appPath, board, volume, log: text => post({ type: 'log', text }) });
+    m = await Machine.create({ vfs, appPath, board, volume, seed, log: text => post({ type: 'log', text }) });
   } catch (e) {
     // Like the real OS: if the app can't be loaded, fall back to the menu.
     post({ type: 'log', text: `cannot start ${appPath}: ${e.message}` });
@@ -93,7 +96,7 @@ async function boot(appPath) {
   m.onAudio = buf => pcm.push(buf.slice());
   clockBase = performance.now();
   lastWall = performance.now(); lastVirtual = 0;
-  post({ type: 'log', text: `started ${appPath}` });
+  post({ type: 'log', text: `started ${appPath} (seed ${seed})` });
   timer = setInterval(tick, TICK_MS);
 }
 
@@ -148,7 +151,8 @@ function onHalt() {
   clearInterval(timer);
   const e = m.kuma.exitRequest;
   post({ type: 'status', app: m.appPath, virtualMs: m.kernel.timeMs, speed: 0, halted: m.halted });
-  if (e?.kind === 'exec') return boot(e.path || 'app.elf');
-  if (e?.kind === 'restart') return boot(m.appPath);
+  // a reboot: the real OS seeds os_rand again, here with a seed derived from this boot's
+  if (e?.kind === 'exec') { seed = nextBootSeed(seed); return boot(e.path || 'app.elf'); }
+  if (e?.kind === 'restart') { seed = nextBootSeed(seed); return boot(m.appPath); }
   // A crash or a plain return: stay halted so the UI can show the reason.
 }
