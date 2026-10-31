@@ -1,0 +1,41 @@
+{
+  "description": "Version 1.1 in English, normal game, one player: blue ship joins on Grain, starts on antenna 4, loads Wood (antenna 16), sails to antenna 12 (set as destination by placing the ship there); the trip takes 68 days in 1.1 (dist / sail + 12; 1.0: 62), after two months (key 6) it arrives and the game pays 500 (of1_500; the English text has no of1gw/of1dke around the amount, then p0079 + ph5 for the total)",
+  "cards": ["freibeuter-der-karibik/original-v1.1"],
+  "language": "en",
+  "timeoutMs": 90000,
+  "steps": [
+    {"afterFile": "sounds/intro\\.wav$", "delay": 500, "key": 7},
+    {"afterFile": "en/p0231\\.wav$", "delay": 500, "key": 6},
+    {"afterFile": "en/p0719\\.wav$", "delay": 500, "key": 5},
+    {"afterFile": "en/p0720\\.wav$", "delay": 500, "key": 5},
+    {"afterFile": "en/p0407\\.wav$", "delay": 500, "key": 6},
+    {"afterFile": "en/p0056\\.wav$", "delay": 300, "place": {"ship": 1, "antenna": 17}},
+    {"delay": 200, "key": 7},
+    {"afterFile": "en/p0221\\.wav$", "delay": 1500, "key": 6},
+    {"afterFile": "en/p0240\\.wav$", "delay": 500, "place": {"ship": 1, "antenna": 4}},
+    {"delay": 500, "key": 6},
+    {"afterFile": "en/p0405\\.wav$", "delay": 500, "key": 6},
+    {"afterFile": "en/p0213\\.wav$", "delay": 500, "key": 6},
+    {"afterFile": "en/p0213\\.wav$", "delay": 500, "key": 6},
+    {"afterFile": "en/p0213\\.wav$", "delay": 500, "key": 6},
+    {"afterFile": "of1womit\\.wav$", "delay": 500, "place": {"ship": 1, "antenna": 16}},
+    {"afterFile": "en/p0128\\.wav$", "delay": 500, "place": {"ship": 1, "antenna": 12}},
+    {"afterFile": "en/p0610\\.wav$", "delay": 3000, "key": 6},
+    {"afterFile": "en/p0610\\.wav$", "delay": 3000, "key": 6}
+  ],
+  "expectFiles": [
+    "en/p0240\\.wav$",
+    "en/of1womit\\.wav$",
+    "en/p0051\\.wav$",
+    "en/p0128\\.wav$",
+    "en/p0012\\.wav$",
+    "en/of1aye\\.wav$",
+    "en/p0790\\.wav$",
+    "en/p0791\\.wav$",
+    "en/p0605\\.wav$",
+    "en/p0012\\.wav$",
+    "en/of1_500\\.wav$",
+    "en/p0079\\.wav$",
+    "en/ph5\\.wav$"
+  ]
+}

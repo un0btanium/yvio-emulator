@@ -49,6 +49,11 @@ folder in them doesn't matter here.
   trade reward, from a card folder you make yourself:
   `cards/freibeuter-der-karibik/modded-double-rewards/pirates/app.elf` (only that file; the
   script lays this folder over `original`). The same trip pays 1000 (`of1_1000`).
+- `v1.1_join_two_players.json`, `v1.1_goods_not_here.json`, `v1.1_goods_delivery.json`: the same three
+  games on version 1.1 (the same keys, waits and expected sounds). In 1.1 the delivery trip takes 6 days
+  longer (68 instead of 62); it still arrives after the second month and pays 500.
+  `v1.1_goods_delivery_en.json` plays it in English: the English reward text has no `of1gw`/`of1dke`
+  around the amount and goes on with `p0079` and `ph5` (the total).
 
 Ids for `place` and `key`:
 - Ships: 1 = blue, 2 = green, 3 = red, 4 = yellow.

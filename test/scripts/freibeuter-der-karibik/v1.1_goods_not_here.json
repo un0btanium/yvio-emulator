@@ -1,0 +1,30 @@
+{
+  "description": "Version 1.1, normal game, one player: blue ship joins on Grain, starts on antenna 4, continues through the equipment prompts, then stands on Tobacco, which the start port doesn't take: the game says so (p0211)",
+  "cards": ["freibeuter-der-karibik/original-v1.1"],
+  "timeoutMs": 60000,
+  "steps": [
+    {"afterFile": "sounds/intro\\.wav$", "delay": 500, "key": 7},
+    {"afterFile": "de/p0231\\.wav$", "delay": 500, "key": 6},
+    {"afterFile": "de/p0719\\.wav$", "delay": 500, "key": 5},
+    {"afterFile": "de/p0720\\.wav$", "delay": 500, "key": 5},
+    {"afterFile": "de/p0407\\.wav$", "delay": 500, "key": 6},
+    {"afterFile": "de/p0056\\.wav$", "delay": 300, "place": {"ship": 1, "antenna": 17}},
+    {"delay": 200, "key": 7},
+    {"afterFile": "de/p0221\\.wav$", "delay": 1500, "key": 6},
+    {"afterFile": "de/p0240\\.wav$", "delay": 500, "place": {"ship": 1, "antenna": 4}},
+    {"delay": 500, "key": 6},
+    {"afterFile": "de/p0405\\.wav$", "delay": 500, "key": 6},
+    {"afterFile": "de/p0213\\.wav$", "delay": 500, "key": 6},
+    {"afterFile": "de/p0213\\.wav$", "delay": 500, "key": 6},
+    {"afterFile": "de/p0213\\.wav$", "delay": 500, "key": 6},
+    {"afterFile": "of1womit\\.wav$", "delay": 500, "place": {"ship": 1, "antenna": 15}}
+  ],
+  "expectFiles": [
+    "de/p0289\\.wav$",
+    "de/p0240\\.wav$",
+    "de/p0405\\.wav$",
+    "de/of1womit\\.wav$",
+    "de/p0211\\.wav$",
+    "de/p0211\\.wav$"
+  ]
+}
