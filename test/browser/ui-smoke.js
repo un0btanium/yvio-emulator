@@ -88,7 +88,7 @@ if (settingsPath) {
   check(await waitFor("document.getElementById('settings-status').textContent.includes('applied')"),
     `settings loaded: ${await ev("document.getElementById('settings-status').textContent")}`);
   const body = await ev('document.body.className');
-  const figures = want.Figures?.['Show as']?.toLowerCase();
+  const figures = want.Game?.['Figures Skin']?.toLowerCase();
   if (figures) check(body.includes(`figures-${figures}`), `figures shown as ${figures} (body: ${body})`);
   const ids = want['Additional Overlays & Views']?.['Antenna Ids'];
   if (ids !== undefined) check(body.includes('show-antenna-ids') === ids, `antenna ids ${ids ? 'shown' : 'hidden'}`);

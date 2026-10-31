@@ -90,13 +90,6 @@
         <label class="btn">Load…<input type="file" id="pick-settings" accept=".json,application/json" hidden></label>
         <span class="muted small" id="settings-status"></span>
       </div>
-      <h3>Figures</h3>
-      <label class="check">Show as
-        <select id="view-figures">
-          <option value="basic">Basic</option>
-          <option value="ships">Ships</option>
-        </select>
-      </label>
       <h3>Console</h3>
       <!-- the console menu (the card's root app.elf) starts the game itself, as on the console -->
       <label class="check">Boot from
@@ -111,6 +104,12 @@
       </div>
       <label class="check"><input type="checkbox" id="view-os-keys"> Show OS keys</label>
       <h3>Game</h3>
+      <label class="check">Figures Skin
+        <select id="figures-skin">
+          <option value="basic">Basic</option>
+          <option value="ships">Ships</option>
+        </select>
+      </label>
       <!-- not a settings-file entry: a new random seed at every Power on, unless one is typed in -->
       <label class="check">Game Seed <input type="number" id="game-seed" autocomplete="off" min="0" max="65535" step="1" inputmode="numeric"></label>
       <p class="muted small">Random at every power on, like the console. Type a number (0–65535) to play the same game again with the same moves; clear the field for random seeds again.</p>

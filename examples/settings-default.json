@@ -1,12 +1,12 @@
 {
-  "Figures": {
-    "Show as": "Basic"
-  },
   "Console": {
     "Boot from": "Game",
     "Audio volume": 80,
     "Console size": 33,
     "Show OS keys": false
+  },
+  "Game": {
+    "Figures Skin": "Basic"
   },
   "Console Overlay": {
     "Opacity": 60,

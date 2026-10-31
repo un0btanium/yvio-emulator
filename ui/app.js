@@ -199,7 +199,7 @@ function viewSelect(id, prefix) {
   apply();
 }
 viewSelect('view-areas', 'areas');
-viewSelect('view-figures', 'figures'); // plain coloured circles or ship drawings
+viewSelect('figures-skin', 'figures'); // plain coloured circles or ship drawings
 // Boot from the game, or from the console menu (the card's root app.elf), which then starts a
 // game with os_exec as on the console. Applies at the next Power on. The menu chooses the game and
 // its own and the games' menus the languages, so the Game and Language choices are hidden then.

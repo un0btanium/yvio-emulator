@@ -88,7 +88,7 @@ You need your game's SD card and a card reader.
   There are plenty of useful settings so have a look and explore them.
 
 
-If you are playing a certain game, under **Settings** → **Figures** → **Show as**, you can select "Ships" for increased immersion. Have fun ;)
+If you are playing a certain game, under **Settings** → **Game** → **Figures Skin**, you can select "Ships" for increased immersion. Have fun ;)
 
 ![figure_skins](/examples/setup03.png)
 
@@ -177,7 +177,7 @@ python3 -m http.server 8000     # then open http://localhost:8000/
 - **Settings file**: **Save** at the top of Settings downloads `settings.json` with every setting;
   **Load…** applies one (as does `emulator/settings.json` on the card, after the pictures).
   Sections and labels are the ones in the UI, choices are the option text, e.g.
-  `{ "Figures": { "Show as": "Ships" }, "Console": { "Audio volume": 60 } }`.
+  `{ "Console": { "Audio volume": 60 }, "Game": { "Figures Skin": "Ships" } }`.
   `examples/settings-default.json` lists every entry with its default. Entries a file leaves out keep
   their current value; unknown entries and values outside a slider's range are reported and
   skipped. Applied settings are remembered like changes in the UI. The Console Overlay values

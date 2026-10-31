@@ -51,12 +51,12 @@ for (const s of SETTINGS) {
 
 // a file with mistakes: good entries apply, the rest is reported
 const r = parseSettings({
-  Figures: { 'Show as': 'ships' },
+  Game: { 'Figures Skin': 'ships' },
   Console: { 'Console size': 60, 'Audio volume': 50, Loudness: 3 },
   Sound: {},
   'Additional Overlays & Views': { 'Antenna Areas': 'Sometimes', 'Antenna Ids': true },
 });
-check(r.values.get('view-figures') === 'ships' && r.values.get('volume') === 50 && r.values.get('view-antenna-ids') === true && r.values.size === 3,
+check(r.values.get('figures-skin') === 'ships' && r.values.get('volume') === 50 && r.values.get('view-antenna-ids') === true && r.values.size === 3,
   `good entries apply (${[...r.values].map(([k, v]) => `${k}=${v}`).join(', ')})`);
 check(r.errors.length === 4 && r.errors.some(e => e.includes('Console size')) && r.errors.some(e => e.includes('Loudness'))
   && r.errors.some(e => e.includes('"Sound"')) && r.errors.some(e => e.includes('Antenna Areas')), `bad entries are reported: ${r.errors.join('; ')}`);
