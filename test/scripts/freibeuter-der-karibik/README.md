@@ -54,6 +54,22 @@ folder in them doesn't matter here.
   longer (68 instead of 62); it still arrives after the second month and pays 500.
   `v1.1_goods_delivery_en.json` plays it in English: the English reward text has no `of1gw`/`of1dke`
   around the amount and goes on with `p0079` and `ph5` (the total).
+- Player against player (sail away), two ships, Normal game:
+  - The setup: blue and green both load Wood in San Juan and sail to Prinzapolca (arriving on day 69). Both are paid 500 there.
+    Then both load Grain and set Camarco (antenna 18).
+  - Green sets out after day 50 towards the port blue is heading for, with arrival days less than 20 apart, so the ships meet
+    ("ship on the horizon", `p0307` … `p0401`). Key 6 fights, key 5 avoids the fight.
+  - The game draws who attacks. The attacker chooses 9 (fire), 10 (board) or 11 (sail away) at `ofNbtop1`.
+  - Other prompts on the way: equipment offers (`p0095`, key 5) and quest offers (key 5, or 6 for a won game of chance).
+  - The emulator's random numbers start from the same seed in every run, so each script plays the same game every time.
+    A different choice in the battle changes the later draws, and with them the quest offers and who arrives first.
+  - `v1.1_pvp_flee_steals.json`: blue attacks and sails away, and the flight succeeds (`of1btesc`, `of1pvp4`).
+    In Camarco blue is paid 600 (`of1_600`) and green's goods are gone (`of2_001`): in 1.1 a flight takes the other ship's cargo.
+  - `v1.1_pvp_avoid.json`: key 5 avoids the fight. Both ships are paid 300 (`of1_300`, `of2_300`).
+  - `v1.1_pvp_fire.json`: blue fires instead and loses (`of1btcn`, `of1pvp2`). The winner takes the cargo, as it should:
+    green is paid 700 (`of2_700`), and blue's goods are gone (`of1_001`).
+  - `pvp_flee.json`: the flee script's keys on version 1.0 (arrival in Prinzapolca on day 63). Here green attacks and sails
+    away (`of2btesc`, `of2pvp4`). No cargo moves, and both ships are paid 300 (`of2_300`, `of1_300`).
 
 Ids for `place` and `key`:
 - Ships: 1 = blue, 2 = green, 3 = red, 4 = yellow.
