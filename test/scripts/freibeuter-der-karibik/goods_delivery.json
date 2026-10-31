@@ -1,0 +1,40 @@
+{
+  "description": "Normal game, one player: blue ship joins on Grain, starts on antenna 4 (San Juan), loads Wood (antenna 16), sails to antenna 12 (Prinzapolca, set as destination by placing the ship there); after two months (key 6) it arrives and the game pays 500 (of1_500)",
+  "cards": ["freibeuter-der-karibik/original"],
+  "timeoutMs": 90000,
+  "steps": [
+    {"afterFile": "sounds/intro\\.wav$", "delay": 500, "key": 7},
+    {"afterFile": "de/p0231\\.wav$", "delay": 500, "key": 6},
+    {"afterFile": "de/p0719\\.wav$", "delay": 500, "key": 5},
+    {"afterFile": "de/p0720\\.wav$", "delay": 500, "key": 5},
+    {"afterFile": "de/p0407\\.wav$", "delay": 500, "key": 6},
+    {"afterFile": "de/p0056\\.wav$", "delay": 300, "place": {"ship": 1, "antenna": 17}},
+    {"delay": 200, "key": 7},
+    {"afterFile": "de/p0221\\.wav$", "delay": 1500, "key": 6},
+    {"afterFile": "de/p0240\\.wav$", "delay": 500, "place": {"ship": 1, "antenna": 4}},
+    {"delay": 500, "key": 6},
+    {"afterFile": "de/p0405\\.wav$", "delay": 500, "key": 6},
+    {"afterFile": "de/p0213\\.wav$", "delay": 500, "key": 6},
+    {"afterFile": "de/p0213\\.wav$", "delay": 500, "key": 6},
+    {"afterFile": "de/p0213\\.wav$", "delay": 500, "key": 6},
+    {"afterFile": "of1womit\\.wav$", "delay": 500, "place": {"ship": 1, "antenna": 16}},
+    {"afterFile": "de/p0128\\.wav$", "delay": 500, "place": {"ship": 1, "antenna": 12}},
+    {"afterFile": "de/p0610\\.wav$", "delay": 3000, "key": 6},
+    {"afterFile": "de/p0610\\.wav$", "delay": 3000, "key": 6}
+  ],
+  "expectFiles": [
+    "de/p0240\\.wav$",
+    "de/of1womit\\.wav$",
+    "de/p0051\\.wav$",
+    "de/p0128\\.wav$",
+    "de/p0012\\.wav$",
+    "de/of1aye\\.wav$",
+    "de/p0790\\.wav$",
+    "de/p0791\\.wav$",
+    "de/p0605\\.wav$",
+    "de/p0012\\.wav$",
+    "de/of1gw\\.wav$",
+    "de/of1_500\\.wav$",
+    "de/of1dke\\.wav$"
+  ]
+}

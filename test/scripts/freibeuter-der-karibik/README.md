@@ -42,6 +42,13 @@ folder in them doesn't matter here.
   player would. The game polls the board in a tight loop while it repeats the message, so the
   run also shows whether the RFID calls take virtual time: about 3 s wall time when they do,
   about 30 s (below real time) when they don't.
+- `goods_delivery.json`: the same start, then the ship stands on Wood (loads it) and on antenna
+  12 (Prinzapolca, which sets the destination); key 6 after each month's announcement, and after
+  two months the ship arrives and the game pays 500 ducats (`of1_500`, then `ph5` for the total).
+- `goods_delivery_mod.json`: `goods_delivery` with a modified `pirates/app.elf` that doubles the
+  trade reward, from a card folder you make yourself:
+  `cards/freibeuter-der-karibik/modded-double-rewards/pirates/app.elf` (only that file; the
+  script lays this folder over `original`). The same trip pays 1000 (`of1_1000`).
 
 Ids for `place` and `key`:
 - Ships: 1 = blue, 2 = green, 3 = red, 4 = yellow.
