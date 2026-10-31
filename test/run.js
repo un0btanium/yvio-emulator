@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Headless runner for the emulator core (yvio-emulator/*).
-//   node test/run.js [--card DIR]... [--app PATH] [--language CODE] [--trace] [--quiet-time] [--until-wav] [--ms N] [--wav OUT] [--slice N] [--display] [--press MS:KEY[:HOLD],...] [--follow-exec] [--menu-language CODE] [--volume N]
+//   node test/run.js [--card DIR]... [--app PATH] [--language CODE] [--trace] [--quiet-time] [--until-wav] [--ms N] [--wav OUT] [--slice N] [--display] [--press MS:KEY[:HOLD],...] [--follow-exec] [--menu-language CODE] [--volume N] [--log-calls SPEC]
 //   node test/run.js test/scripts/GAME/NAME.json [options]   run a test script (see test/scripts/README.md); exit 1 on failure
 // --card may repeat; later cards override files of earlier ones. Without --card it uses cards/freibeuter-der-karibik/original
 // (cards/ is git-ignored: put or link your own SD-card copies there as cards/GAME/VERSION/;
@@ -11,6 +11,9 @@
 // apps then set 200); it carries over os_exec reboots.
 // --follow-exec (script: "followExec": true) reboots into the app an os_exec names, as the page
 // does (e.g. the console menu app.elf starting PIRATES/app.elf); times then run on across reboots.
+// --log-calls ADDR[:FMT][=LABEL],... (or @FILE with one such entry per line, # comments) prints a line
+// whenever the app executes ADDR, with r0, r1, ... formatted by the letters of FMT (default "s"):
+// s C string (UTF-8), d signed int, u unsigned, x hex, f float bits, - skip. E.g. an app's debug-print stubs.
 
 import { performance } from 'node:perf_hooks';
 import { vfsFromDirs } from './node-files.js';
@@ -20,7 +23,7 @@ import { createCpu } from '../yvio-emulator/cpu.js';
 import { toAscii } from '../yvio-emulator/display.js';
 
 const args = process.argv.slice(2);
-const opt = { cards: [], app: 'pirates/app.elf', trace: false, quietTime: false, untilWav: false, ms: 10000, wav: null, slice: undefined, display: false, presses: [], files: false, language: null, followExec: false, menuLanguage: null, volume: undefined };
+const opt = { cards: [], app: 'pirates/app.elf', trace: false, quietTime: false, untilWav: false, ms: 10000, wav: null, slice: undefined, display: false, presses: [], files: false, language: null, followExec: false, menuLanguage: null, volume: undefined, logCalls: [] };
 for (let i = 0; i < args.length; i++) {
   const a = args[i];
   if (a === '--card') opt.cards.push(args[++i]);
@@ -37,9 +40,31 @@ for (let i = 0; i < args.length; i++) {
   else if (a === '--follow-exec') opt.followExec = true;
   else if (a === '--menu-language') opt.menuLanguage = args[++i];
   else if (a === '--volume') opt.volume = Number(args[++i]);
+  else if (a === '--log-calls') opt.logCalls.push(...parseLogCalls(args[++i]));
   else if (a === '--press') opt.presses = args[++i].split(',').map(p => { const [at, key, hold = 150] = p.split(':').map(Number); return { at, key, hold }; });
   else if (!a.startsWith('--') && a.endsWith('.json')) opt.script = JSON.parse(readFileSync(a, 'utf8'));
   else { console.error(`unknown option ${a}`); process.exit(2); }
+}
+/** Parse a --log-calls spec into [{addr, fmt, label}]. */
+function parseLogCalls(spec) {
+  const items = spec.startsWith('@')
+    ? readFileSync(spec.slice(1), 'utf8').split('\n').map(l => l.replace(/#.*/, '').trim()).filter(Boolean)
+    : spec.split(',');
+  return items.map(it => {
+    const m = /^(?:0x)?([0-9a-f]+)(?::([sduxf-]+))?(?:[=\s]+(.*))?$/i.exec(it.trim());
+    if (!m) { console.error(`bad --log-calls entry "${it}"`); process.exit(2); }
+    return { addr: parseInt(m[1], 16), fmt: m[2] ?? 's', label: m[3] ?? '' };
+  });
+}
+const f32 = new DataView(new ArrayBuffer(4));
+/** Format register value v by letter c (see --log-calls). */
+function fmtArg(c, v) {
+  if (c === 's') return v ? JSON.stringify(Buffer.from(m.cpu.readCString(v, 300), 'latin1').toString('utf8')) : 'NULL';
+  if (c === 'd') return String(v | 0);
+  if (c === 'u') return String(v >>> 0);
+  if (c === 'x') return '0x' + (v >>> 0).toString(16);
+  if (c === 'f') { f32.setUint32(0, v >>> 0); return String(+f32.getFloat32(0).toPrecision(7)); }
+  return null;
 }
 const cardsDir = (process.env.YVIO_CARDS ?? new URL('../cards', import.meta.url).pathname).replace(/\/?$/, '/');
 const script = opt.script;
@@ -87,6 +112,12 @@ async function start(appPath, board, volume = opt.volume) {
       if (opt.trace && !(opt.quietTime && NOISY.has(text.slice(0, text.indexOf('('))))) console.log(line);
     },
   });
+  for (const lc of opt.logCalls) {
+    m.cpu.hookCode(lc.addr, lc.addr, () => {
+      const vals = [...lc.fmt].map((c, i) => fmtArg(c, m.cpu.reg(i))).filter(v => v !== null);
+      console.log(`[call @ ${clock().toFixed(0)} ms] ${lc.label || lc.addr.toString(16)}: ${vals.join(' ')}`);
+    });
+  }
   m.kuma.on.fileOpen = (path, ok) => {
     if (ok) opened.push({ t: clock(), path });
     if (opt.trace || opt.files) console.log(`[file @ ${clock().toFixed(0)} ms] fopen ${path} ${ok ? 'ok' : 'FAILED'}`);
