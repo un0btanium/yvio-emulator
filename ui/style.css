@@ -89,6 +89,13 @@ h3 { font-size: .9rem; margin: 16px 0 6px; color: var(--muted); }
   translate: -50% -50%; z-index: 1;
 }
 #console-layer .device { --size: 100%; }
+/* the white shell (console-ui.js) fills the layer; the disc shrinks into it, so Console size stays the
+   whole console. The layer itself takes no clicks, only the disc does: the board stays usable beside it. */
+#console-layer { aspect-ratio: 1; display: grid; place-items: center; pointer-events: none; }
+#console-layer .device { pointer-events: auto; }
+#console-layer .shell { position: absolute; inset: 0; width: 100%; height: 100%; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .35)); }
+body.show-shell #console-layer .device { --size: calc(100% / var(--shell-r, 1)); box-shadow: none; }
+body:not(.show-shell) #console-layer .shell { display: none; }
 #console-layer.enlarged { position: fixed; left: 50%; top: 50%; width: min(94vw, 94dvh); z-index: 20; }
 #enlarge-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, .6); z-index: 19; }
 #leds { cursor: zoom-in; }

@@ -102,6 +102,7 @@
         <label>Audio volume <input type="range" id="volume" min="0" max="100" value="80"></label>
         <label>Console size <input type="range" id="console-size" min="25" max="45" step="0.5" value="33"></label>
       </div>
+      <label class="check"><input type="checkbox" id="console-shell"> White shell</label>
       <label class="check"><input type="checkbox" id="view-os-keys"> Show OS keys</label>
       <h3>Game</h3>
       <label class="check">Figures Skin
@@ -169,8 +170,9 @@
 
     <details data-section="about">
       <summary>About</summary>
-      <p class="muted small">Unofficial fan project, not affiliated with or endorsed by the makers of
-        Yvio or "Freibeuter der Karibik"; all trademarks belong to their owners. No game files,
+      <p class="muted small">Unofficial fan project, not affiliated with or endorsed by the makers or
+        rights holders of Yvio or "Freibeuter der Karibik". "Yvio" is the name of the original console,
+        used here only to describe compatibility; all trademarks belong to their owners. No game files,
         sounds or artwork are included: you need your own copy of the game's SD card.</p>
       <p class="muted small">Emulator code: GPL-2.0-or-later. CPU: Unicorn.js / Unicorn / QEMU (GPL-2.0).
         See <code>LICENSE</code> and <code>vendor/unicorn/README.md</code> in the source.</p>
@@ -192,6 +194,8 @@
       <div id="board"></div>
       <!-- the console stands on the whirlpool in the middle of the board -->
       <div id="console-layer">
+        <!-- the white plastic shell around the disc (Settings → Console → White shell); drawn by console-ui.js -->
+        <svg class="shell" id="shell" aria-hidden="true"></svg>
         <div class="device" id="device">
           <!-- keys 0..11 are placed around the display by console-ui.js -->
           <canvas id="leds" width="240" height="240" aria-label="12×12 LED display" title="Tap to enlarge"></canvas>

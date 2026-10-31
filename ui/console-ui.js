@@ -1,5 +1,5 @@
-// The emulated console: the key ring around the 12×12 LED display, key input (pointer) and
-// the overlay picture of the printed sheet. The overlay controls are found by id
+// The emulated console: the key ring around the 12×12 LED display, key input (pointer), the
+// white plastic shell around it and the overlay picture of the printed sheet. The overlay controls are found by id
 // in the page (#pick-overlay, #overlay-*).
 
 import { pixel, keyLed, SIZE } from '../yvio-emulator/display.js';
@@ -22,11 +22,54 @@ const KEY_HINT = { 6: 'OK', 7: 'skip', 8: '↻' };
  *  2 red, confirmed on real hardware. */
 const LED_OF_CHANNEL = ['y', 'g', 'r'];
 
+// The white shell around the disc (measured on a photo of the real console, in disc radii): a
+// spiral in three 120° arcs. Each arc starts at a step with a rounded shoulder, is widest about a
+// third along and narrows clockwise to a thin rim, then the edge steps outwards (a smooth notch)
+// to the next arc. The black base under the shell shows in the notches.
+const SHELL_STEPS = [72, 192, 312]; // degrees clockwise from 12 o'clock
+/** [degrees clockwise from the arc's step, radius] along one arc */
+const SHELL_ARC = [
+  [0, 1.12], [0.2, 1.22], [1.5, 1.28], [5, 1.31], [12, 1.335], [30, 1.355], [50, 1.35], [68, 1.315],
+  [84, 1.25], [97, 1.18], [108, 1.12], [115, 1.09], [118.6, 1.085],
+];
+/** outer radius of the whole console in disc radii (the arcs' widest point, with some margin) */
+const SHELL_R = 1.36;
+const SHELL_BASE_R = 1.2;
+
+/** The shell outline as an SVG path (disc radius = 100, centre at 0 0): the points joined by a
+ *  closed Catmull-Rom spline, so all corners come out round. */
+function shellPath() {
+  const p = SHELL_STEPS.flatMap(step => SHELL_ARC.map(([u, r]) => {
+    const a = (step + u) * Math.PI / 180;
+    return [100 * r * Math.sin(a), -100 * r * Math.cos(a)];
+  }));
+  const n = p.length, f = v => v.toFixed(1);
+  let d = `M${f(p[0][0])} ${f(p[0][1])}`;
+  for (let i = 0; i < n; i++) {
+    const [p0, p1, p2, p3] = [-1, 0, 1, 2].map(j => p[(i + j + n) % n]);
+    d += `C${f(p1[0] + (p2[0] - p0[0]) / 6)} ${f(p1[1] + (p2[1] - p0[1]) / 6)} ` +
+      `${f(p2[0] - (p3[0] - p1[0]) / 6)} ${f(p2[1] - (p3[1] - p1[1]) / 6)} ${f(p2[0])} ${f(p2[1])}`;
+  }
+  return d + 'Z';
+}
+
+/** Draw the shell into the (empty) svg; CSS shows it and shrinks the disc when Settings → White shell is on. */
+function drawShell(svg) {
+  const s = 100 * SHELL_R;
+  svg.setAttribute('viewBox', `${-s} ${-s} ${2 * s} ${2 * s}`);
+  svg.innerHTML = `<defs><radialGradient id="shell-shade" cx="35%" cy="30%" r="80%">` +
+    `<stop offset="0" stop-color="#ffffff"/><stop offset="0.6" stop-color="#ececea"/><stop offset="1" stop-color="#cfcfcc"/></radialGradient></defs>` +
+    `<circle r="${100 * SHELL_BASE_R}" fill="#18181a"/>` +
+    `<path d="${shellPath()}" fill="url(#shell-shade)" stroke="#9c9c99" stroke-width="0.8"/>`;
+  svg.parentElement.style.setProperty('--shell-r', String(SHELL_R));
+}
+
 /**
  * @param {HTMLElement} device  element with the #leds canvas and the #overlay img
  * @param {{ onKeys: (mask:number) => void }} opts  onKeys gets the new key mask on every change
  */
 export function createConsole(device, { onKeys }) {
+  drawShell($('shell'));
   /** @type {HTMLButtonElement[]} */
   const keyButtons = [];
   for (let k = 0; k < 12; k++) {

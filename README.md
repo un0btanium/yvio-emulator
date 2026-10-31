@@ -1,6 +1,7 @@
 # Yvio Emulator
 
-> Unofficial fan project, not affiliated with or endorsed by the makers of Yvio or the game. All
+> Unofficial fan project, not affiliated with or endorsed by the makers or rights holders of Yvio or
+> the game. "Yvio" is the name of the original console, used here only to describe compatibility. All
 > trademarks belong to their owners. Do not open issues or pull requests that contain game files,
 > sounds, texts or pictures of the games.
 
@@ -156,7 +157,7 @@ python3 -m http.server 8000     # then open http://localhost:8000/
     portrait), so changes to the console size or overlay show at once. Sections: **Console** (load
     the card, **Power on** / Power off, pause (below the drop box one line: "Loaded: N game files, M emulator files. Ready!" after
     loading, then "Playing…", "Paused." or "Ready!"), and the OS keys menu / volume −/+ (12–14) if "Show OS keys" is on in Settings → Console or the console menu runs; volume −/+ change the console volume, and Settings → Console → Audio volume follows), **Board & Pictures** (antenna layout file, board and overlay pictures),
-    **Settings** (groups Figures: shown as Basic circles or Ships; Console: boot from game/console menu, volume, console size, Show OS keys; Console
+    **Settings** (groups Figures: shown as Basic circles or Ships; Console: boot from game/console menu, volume, console size, White shell (the plastic shell around the disc), Show OS keys; Console
     Overlay: overlay adjustment; Additional Overlays & Views: antenna ids, console key ids, antenna
     areas never / on interact / always, unused antennas; Fullscreen: fullscreen, keep awake),
     **Status & Logs**, **About** (disclaimer, licenses). Hiding the unused antennas moves ships on them off the board.

@@ -167,8 +167,8 @@ for (const d of $('settings').querySelectorAll('details[data-section]')) {
 
 // ---- view options: ids on the antennas and console keys, antenna areas, unused antennas ----
 // Defaults are in settings.js: all but the areas (shown on interaction: hover, drag,
-// tap-to-place) are off; the figures are drawn as plain coloured circles, or as ships.
-const VIEW_CHECKS = { 'view-antenna-ids': 'show-antenna-ids', 'view-key-ids': 'show-key-ids' };
+// tap-to-place) and the console's white shell are off; the figures are drawn as plain coloured circles, or as ships.
+const VIEW_CHECKS = { 'view-antenna-ids': 'show-antenna-ids', 'view-key-ids': 'show-key-ids', 'console-shell': 'show-shell' };
 // The OS keys (menu, volume −/+): hidden unless asked for, or while the
 // console menu runs (it uses them).
 let menuRunning = false;

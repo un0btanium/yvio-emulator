@@ -16,6 +16,7 @@ export const SETTINGS = [
   { section: 'Console', label: 'Boot from', key: 'boot-from', type: 'choice', options: { game: 'Game', menu: 'Console menu' }, default: 'game' },
   { section: 'Console', label: 'Audio volume', key: 'volume', type: 'number', min: 0, max: 100, default: 80 },
   { section: 'Console', label: 'Console size', key: 'console-size', type: 'number', min: 25, max: 45, default: 33 },
+  { section: 'Console', label: 'White shell', key: 'console-shell', type: 'bool', default: true },
   { section: 'Console', label: 'Show OS keys', key: 'view-os-keys', type: 'bool', default: false },
   { section: 'Game', label: 'Figures Skin', key: 'figures-skin', type: 'choice', options: { basic: 'Basic', ships: 'Ships' }, default: 'basic' },
   { section: 'Console Overlay', label: 'Opacity', key: 'overlay-opacity', type: 'number', min: 0, max: 100, default: 60 },

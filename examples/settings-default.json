@@ -3,6 +3,7 @@
     "Boot from": "Game",
     "Audio volume": 80,
     "Console size": 33,
+    "White shell": true,
     "Show OS keys": false
   },
   "Game": {
